@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="app">
+      <p id="name"></p>
+      <p id="age"></p>
+    </div>
+    <script type="module">
+      import { reactive, effect } from "./reactivity.esm.js";
+      const origin = {
+        name: "John",
+        age: 18,
+      };
+      const state = reactive(origin);
+
+      const app = document.getElementById("app");
+      const name = document.getElementById("name");
+      const age = document.getElementById("age");
+
+      effect(() => {
+        app.innerHTML = `姓名${state.name},年龄${state.age}`;
+      });
+      effect(() => {
+        app.innerHTML = `姓名${state.name}`;
+      });
+
+      setTimeout(() => {
+        state.age++;
+      }, 1000);
+
+      // effect(() => {
+      //   console.log(state.name);
+      //   effect(() => {
+      //     console.log(state.name);
+      //   });
+      //   console.log(state.age);
+      // });
+    </script>
+  </body>
+</html>

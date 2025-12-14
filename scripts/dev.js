@@ -1,4 +1,5 @@
 import minimist from "minimist";
+import esbuild from "esbuild";
 import { resolve, dirname } from "path"; // 路径处理 用于将相对路径转换为绝对路径
 import { fileURLToPath } from "url"; // URL处理 用于将URL转换为文件路径
 import { createRequire } from "module";
@@ -29,6 +30,7 @@ const require = createRequire(import.meta.url); // 创建一个require函数
 // 输出: [ 'reactivity' ]
 
 const args = minimist(process.argv.slice(2));
+
 // 获取目标
 const target = args._[0] || "reactivity"; // reactivity
 // 获取格式
@@ -39,15 +41,22 @@ console.log(target, format); // reactivity esm
 // 入口文件 根据目标和格式生成入口文件路径
 const entry = resolve(__dirname, `../packages/${target}/src/index.ts`);
 
+const pkg = require(resolve(__dirname, `../packages/${target}/package.json`));
+
 esbuild
   .context({
     entryPoints: [entry], // 入口文件
-    outfile: resolve(__dirname, `../packages/dist/${target}.${format}.js`), // 输出文件
+    outfile: resolve(
+      __dirname,
+      `../packages/${target}/dist/${target}.${format}.js`
+    ), // 输出文件
     bundle: true, // 打包 将所有依赖打包成一个文件
     platform: "browser", // 平台 浏览器
     sourcemap: true, // 源码映射 生成sourcemap文件
-    format, // 格式 输出格式
+    format, // 格式 输出格式 cjs esm iife
+    globalName: pkg.buildOptions.name, // 全局变量名
   })
   .then((ctx) => {
+    console.log("start build");
     ctx.watch(); // 监听文件变化
   });
