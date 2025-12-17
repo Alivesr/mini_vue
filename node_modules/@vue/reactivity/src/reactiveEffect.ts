@@ -34,7 +34,7 @@ export function track(target, key) {
     // console.log(dep)
 
     trackEffect(activeEffect,dep) //将当前的effect 放到dep中,后续可以根据值的变化触发此dep中存放的effect
-    console.log(targetMap);
+    // console.log(targetMap);
   }
 }
 

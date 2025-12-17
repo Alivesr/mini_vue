@@ -6,6 +6,16 @@ function effect(fn, options) {
   _effect.run();
 }
 var activeEffect;
+function preCleanEffect(effect3) {
+  effect3._depsLength = 0;
+  effect3._trackId++;
+}
+function postCleanEffect(effect3) {
+  for (let i = 0; i < effect3._depsLength; i++) {
+    cleanDepEffect(effect3.deps[i], effect3);
+  }
+  effect3.deps.length = effect3._depsLength;
+}
 var ReactiveEffect = class {
   //用于记录当前effect 依赖的dep的数量
   //fn 用户传入的函数
@@ -29,15 +39,33 @@ var ReactiveEffect = class {
     let lastEffect = activeEffect;
     try {
       activeEffect = this;
+      preCleanEffect(this);
       return this.fn();
     } finally {
+      postCleanEffect(this);
       activeEffect = lastEffect;
     }
   }
 };
+function cleanDepEffect(dep, effect3) {
+  dep.delete(effect3);
+  if (dep.size == 0) {
+    dep.cleanup();
+  }
+}
 function trackEffect(effect3, dep) {
-  dep.set(effect3, effect3._trackId);
-  effect3.deps[effect3._depsLength++] = dep;
+  if (dep.get(effect3) !== effect3._trackId) {
+    dep.set(effect3, effect3._trackId);
+    let oldDeps = effect3.deps[effect3._depsLength];
+    if (oldDeps !== dep) {
+      if (oldDeps) {
+        cleanDepEffect(oldDeps, effect3);
+      }
+      effect3.deps[effect3._depsLength] = dep;
+    } else {
+      effect3._depsLength++;
+    }
+  }
 }
 function triggerEffects(dep) {
   for (const effect3 of dep.keys()) {
@@ -68,7 +96,6 @@ function track(target, key) {
       }, key));
     }
     trackEffect(activeEffect, dep);
-    console.log(targetMap);
   }
 }
 function trigger(target, key, newValue, oldValue) {
@@ -126,6 +153,7 @@ function reactive(target) {
 }
 export {
   activeEffect,
+  cleanDepEffect,
   effect,
   reactive,
   trackEffect,
