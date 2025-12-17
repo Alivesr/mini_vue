@@ -1,4 +1,5 @@
 import { activeEffect } from "./effect";
+import { trigger } from "./reactiveEffect";
 import { track } from "./reactiveEffect";
 export enum ReactiveFlags {
   IS_REACTIVE = "__v_isReactive",
@@ -23,6 +24,15 @@ export const mutableHandlers: ProxyHandler<object> = {
     //todo 依赖收集
   },
   set(target, key, value, receiver) {
-    return Reflect.set(target, key, value, receiver);
+
+    let oldValue = target[key];
+    let result = Reflect.set(target, key, value, receiver);
+    // 如果属性值没有改变，则不触发更新
+    if (oldValue !== value) {
+      // 触发更新
+      trigger(target, key,value,oldValue);
+    }
+
+    return result
   },
 };
