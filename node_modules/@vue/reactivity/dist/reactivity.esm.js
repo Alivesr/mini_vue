@@ -4,6 +4,12 @@ function effect(fn, options) {
     _effect.run();
   });
   _effect.run();
+  if (options) {
+    Object.assign(_effect, options);
+  }
+  const runner = _effect.run.bind(_effect);
+  runner.effect = _effect;
+  return runner;
 }
 var activeEffect;
 function preCleanEffect(effect3) {
@@ -11,7 +17,7 @@ function preCleanEffect(effect3) {
   effect3._trackId++;
 }
 function postCleanEffect(effect3) {
-  for (let i = 0; i < effect3._depsLength; i++) {
+  for (let i = effect3._depsLength; i < effect3.deps.length; i++) {
     cleanDepEffect(effect3.deps[i], effect3);
   }
   effect3.deps.length = effect3._depsLength;
@@ -61,7 +67,7 @@ function trackEffect(effect3, dep) {
       if (oldDeps) {
         cleanDepEffect(oldDeps, effect3);
       }
-      effect3.deps[effect3._depsLength] = dep;
+      effect3.deps[effect3._depsLength++] = dep;
     } else {
       effect3._depsLength++;
     }

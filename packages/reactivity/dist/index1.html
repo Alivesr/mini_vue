@@ -12,6 +12,7 @@
     </div>
     <script type="module">
       import { reactive, effect } from "./reactivity.esm.js";
+      // import { reactive,effect } from "";
       const origin = {
         name: "John",
         age: 18,
@@ -27,15 +28,19 @@
       //   console.log('runner')
       //   app.innerHTML = state.flag? state.name:state.age
       // });
-      effect(() => {
-        console.log('runner')
-        app.innerHTML = state.flag+state.flag+state.flag
-      });
+      let runner = effect(() => {
+        app.innerHTML = state.flag? state.name:state.age
+      },{
+        scheduler(){
+          console.log('scheduler,数据更新了')
+          runner() //手动触发effect 用于手动调用effect.run 方法
+        }
+      })// 这里的scheduler 会在effect.run 之前调用, 所以这里的state.flag 是false, 所以不会触发effect
       setTimeout(() => {
         state.flag =false
-        setTimeout(() => {
-          state.name="李四"
-        }, 1000);
+        // setTimeout(() => {
+        //   state.name="李四"
+        // }, 1000);
       }, 1000);
 
 

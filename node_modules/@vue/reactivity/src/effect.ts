@@ -6,6 +6,15 @@ export function effect(fn, options?: any) {
     _effect.run();
   });
   _effect.run();
+
+  if(options){
+    Object.assign(_effect,options)
+  }  
+
+  const runner = _effect.run.bind(_effect)
+  runner.effect = _effect
+  return runner //外界可以调用runner 来手动触发effect
+
 }
 
 export let activeEffect;
@@ -16,12 +25,12 @@ export let activeEffect;
   effect._trackId++ // 每次执行id都是+1,如果id相同,说明是同一个effect
 }
 
-// 清理当前effect 依赖的dep
+// 清理当前effect剩余的dep
  function postCleanEffect(effect){
-  for(let i=0;i<effect._depsLength;i++){
-    cleanDepEffect(effect.deps[i],effect)
+  for(let i=effect._depsLength;i<effect.deps.length;i++){
+    cleanDepEffect(effect.deps[i],effect)  //删除多余dep中的effect
   }
-  effect.deps.length=effect._depsLength
+  effect.deps.length=effect._depsLength 
 }
 
 
@@ -79,7 +88,7 @@ export function trackEffect(effect, dep) {
       if(oldDeps){
         cleanDepEffect(oldDeps,effect)
       }
-      effect.deps[effect._depsLength]=dep
+      effect.deps[effect._depsLength++]=dep
       //只替换的话 并没有清理dep中的effect 还会重新触发
     }else{
       effect._depsLength++
