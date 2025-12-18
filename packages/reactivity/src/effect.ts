@@ -40,6 +40,7 @@ class ReactiveEffect {
   public active = true; // 创建的effect 是响应式的
   deps=[] //用于存放当前effect 依赖的dep
   _depsLength=0 //用于记录当前effect 依赖的dep的数量
+  _running = 0
 
   //fn 用户传入的函数
   //scheduler 调度器
@@ -56,9 +57,10 @@ class ReactiveEffect {
       activeEffect = this;
       //每次执行都要将上一次的依赖进行清空
       preCleanEffect(this)
-
+      this._running++
       return this.fn(); // 执行用户传入的函数
     } finally {
+      this._running--
       postCleanEffect(this)
       activeEffect = lastEffect;
     }
@@ -106,7 +108,10 @@ export function trackEffect(effect, dep) {
 export function triggerEffects(dep) {
   for(const effect of dep.keys()){
     if(effect.scheduler){
-      effect.scheduler() // effect.run
+      //如果effect 正在执行中,就不触发 预防死循环
+      if(effect._running == 0){
+        effect.scheduler() // effect.run
+      }
     }
   }
 }

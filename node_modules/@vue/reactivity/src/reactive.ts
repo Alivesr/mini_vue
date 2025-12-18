@@ -1,6 +1,6 @@
 import { ReactiveFlags, mutableHandlers } from "./basehandler";
 
-function isObject(val: any) {
+export function isObject(val: any) {
   return typeof val === "object" && val !== null;
 }
 // 存储响应式对象的映射 用于缓存响应式对象 可以避免重复创建代理对象

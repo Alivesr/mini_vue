@@ -23,7 +23,6 @@ function postCleanEffect(effect3) {
   effect3.deps.length = effect3._depsLength;
 }
 var ReactiveEffect = class {
-  //用于记录当前effect 依赖的dep的数量
   //fn 用户传入的函数
   //scheduler 调度器
   //如果fn中依赖的数据变化了，就重新调用run方法
@@ -37,6 +36,8 @@ var ReactiveEffect = class {
     this.deps = [];
     //用于存放当前effect 依赖的dep
     this._depsLength = 0;
+    //用于记录当前effect 依赖的dep的数量
+    this._running = 0;
   }
   run() {
     if (!this.active) {
@@ -46,8 +47,10 @@ var ReactiveEffect = class {
     try {
       activeEffect = this;
       preCleanEffect(this);
+      this._running++;
       return this.fn();
     } finally {
+      this._running--;
       postCleanEffect(this);
       activeEffect = lastEffect;
     }
@@ -76,7 +79,9 @@ function trackEffect(effect3, dep) {
 function triggerEffects(dep) {
   for (const effect3 of dep.keys()) {
     if (effect3.scheduler) {
-      effect3.scheduler();
+      if (effect3._running == 0) {
+        effect3.scheduler();
+      }
     }
   }
 }
@@ -123,7 +128,11 @@ var mutableHandlers = {
       return true;
     }
     track(target, key);
-    return Reflect.get(target, key, receiver);
+    let res = Reflect.get(target, key, receiver);
+    if (isObject(res)) {
+      return reactive(res);
+    }
+    return res;
   },
   set(target, key, value, receiver) {
     let oldValue = target[key];
@@ -161,6 +170,7 @@ export {
   activeEffect,
   cleanDepEffect,
   effect,
+  isObject,
   reactive,
   trackEffect,
   triggerEffects
