@@ -32,3 +32,8 @@ function createReactiveObject(target: object) {
 export function reactive(target: object) {
   return createReactiveObject(target);
 }
+
+// 转换为响应式对象
+export function toReactive(value: any) {
+  return isObject(value) ? reactive(value) : value;
+}
