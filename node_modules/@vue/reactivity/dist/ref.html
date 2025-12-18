@@ -11,7 +11,14 @@
       <p id="age"></p>
     </div>
     <script type="module">
-      import { reactive, effect, ref } from "./reactivity.esm.js";
+      import {
+        reactive,
+        effect,
+        ref,
+        toRef,
+        toRefs,
+        proxyRefs,
+      } from "./reactivity.esm.js";
       const origin = {
         name: "John",
         age: 18,
@@ -27,13 +34,20 @@
 
       const flag = ref(false);
 
+      const state1 = ref(origin);
+      console.log(state1.value);
       effect(() => {
-        app.innerHTML = flag.value ? state.name : state.age;
+        app.innerHTML = state1.value.name;
       });
-
       setTimeout(() => {
-        flag.value = true;
+        state1.value.name = 1;
+        console.log(state1.value);
       }, 1000);
+
+      // console.log(nameRef);
+      // setTimeout(() => {
+      //   flag.value = true;
+      // }, 1000);
 
       // let flag = {
       //   _v:false,
