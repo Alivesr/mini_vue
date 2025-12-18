@@ -38,8 +38,16 @@ var ReactiveEffect = class {
     this._depsLength = 0;
     //用于记录当前effect 依赖的dep的数量
     this._running = 0;
+    this._dirtyLevel = 4 /* Dirty */;
+  }
+  get dirty() {
+    return this._dirtyLevel === 4 /* Dirty */;
+  }
+  set dirty(v) {
+    this._dirtyLevel = v ? 4 /* Dirty */ : 0 /* NotDirty */;
   }
   run() {
+    this._dirtyLevel = 0 /* NotDirty */;
     if (!this.active) {
       return this.fn();
     }
@@ -78,6 +86,9 @@ function trackEffect(effect3, dep) {
 }
 function triggerEffects(dep) {
   for (const effect3 of dep.keys()) {
+    if (effect3._dirtyLevel < 4 /* Dirty */) {
+      effect3._dirtyLevel = 4 /* Dirty */;
+    }
     if (effect3.scheduler) {
       if (effect3._running == 0) {
         effect3.scheduler();
@@ -253,9 +264,55 @@ function proxyRefs(objectWithRefs) {
     }
   });
 }
+
+// packages/shared/src/index.ts
+function isFunction(val) {
+  return typeof val === "function";
+}
+
+// packages/reactivity/src/computed.ts
+var ComputedRefImpl = class {
+  constructor(getter, setter) {
+    this.setter = setter;
+    this.effect = new ReactiveEffect(
+      () => getter(this._value),
+      // 计算属性依赖的值会对计算属性effect进行收集
+      () => triggerRefValue(this)
+      // 计算属性依赖的值变化后会触发此函数 通知effect重新执行
+    );
+  }
+  get value() {
+    if (this.effect.dirty) {
+      this._value = this.effect.run();
+      trackRefValue(this);
+    } else {
+      return this._value;
+    }
+    return this.effect.run();
+  }
+  set value(v) {
+    this.setter(v);
+  }
+};
+function computed(getterOrOptions) {
+  let onlyGetter = isFunction(getterOrOptions);
+  let getter;
+  let setter;
+  if (onlyGetter) {
+    getter = getterOrOptions;
+    setter = () => {
+    };
+  } else {
+    getter = getterOrOptions.get;
+    setter = getterOrOptions.set;
+  }
+  return new ComputedRefImpl(getter, setter);
+}
 export {
+  ReactiveEffect,
   activeEffect,
   cleanDepEffect,
+  computed,
   effect,
   isObject,
   proxyRefs,
@@ -265,6 +322,8 @@ export {
   toRef,
   toRefs,
   trackEffect,
-  triggerEffects
+  trackRefValue,
+  triggerEffects,
+  triggerRefValue
 };
 //# sourceMappingURL=reactivity.esm.js.map

@@ -2,9 +2,7 @@ import { trigger } from "./reactiveEffect";
 import { track } from "./reactiveEffect";
 import { reactive } from "./reactive";
 import { isObject } from "./reactive";
-export enum ReactiveFlags {
-  IS_REACTIVE = "__v_isReactive",
-}
+import { ReactiveFlags } from "./constans";
 export const mutableHandlers: ProxyHandler<object> = {
   // 获取属性值
   get(target, key, receiver) {

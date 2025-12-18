@@ -1,3 +1,4 @@
+import { DirtyLevels } from "./constans";
 export function effect(fn, options?: any) {
   //创建一个响应式effect 数据变化后可以重新执行
 
@@ -32,19 +33,29 @@ function postCleanEffect(effect) {
   effect.deps.length = effect._depsLength;
 }
 
-class ReactiveEffect {
+export class ReactiveEffect {
   _trackId = 0; //用于标识当前effect执行了几次
   public active = true; // 创建的effect 是响应式的
   deps = []; //用于存放当前effect 依赖的dep
   _depsLength = 0; //用于记录当前effect 依赖的dep的数量
   _running = 0;
+  _dirtyLevel = DirtyLevels.Dirty;
 
   //fn 用户传入的函数
   //scheduler 调度器
   //如果fn中依赖的数据变化了，就重新调用run方法
   constructor(public fn: any, public scheduler?: any) {}
 
+  public get dirty() {
+    // 是否是脏值
+    return this._dirtyLevel === DirtyLevels.Dirty;
+  }
+  public set dirty(v) {
+    this._dirtyLevel = v ? DirtyLevels.Dirty : DirtyLevels.NotDirty;
+  }
+
   run() {
+    this._dirtyLevel = DirtyLevels.NotDirty; // 执行effect 后,将dirtyLevel 设为 NotDirty
     if (!this.active) {
       return this.fn();
     }
@@ -101,6 +112,11 @@ export function trackEffect(effect, dep) {
 
 export function triggerEffects(dep) {
   for (const effect of dep.keys()) {
+    //当前这个值是不脏的,需要将dirtyLevel 设为Dirty来触发数据更新
+    if (effect._dirtyLevel < DirtyLevels.Dirty) {
+      effect._dirtyLevel = DirtyLevels.Dirty;
+    }
+
     if (effect.scheduler) {
       //如果effect 正在执行中,就不触发 预防死循环
       if (effect._running == 0) {

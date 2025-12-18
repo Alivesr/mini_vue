@@ -1,5 +1,5 @@
-import { ReactiveFlags, mutableHandlers } from "./basehandler";
-
+import { mutableHandlers } from "./basehandler";
+import { ReactiveFlags } from "./constans";
 export function isObject(val: any) {
   return typeof val === "object" && val !== null;
 }
