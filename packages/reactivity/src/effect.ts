@@ -73,6 +73,14 @@ export class ReactiveEffect {
       activeEffect = lastEffect;
     }
   }
+  // 停止effect 依赖收集
+  stop() {
+    if (this.active) {
+      preCleanEffect(this);
+      postCleanEffect(this);
+      this.active = false;
+    }
+  }
 }
 
 // 清理dep 中的effect

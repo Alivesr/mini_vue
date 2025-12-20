@@ -45,7 +45,9 @@ function traverse(
 
 function doWatch(
   source: any,
-  callback: ((newVal: any, oldVal: any) => void) | null,
+  callback:
+    | ((newVal: any, oldVal: any, onCleanup: (fn: () => void) => void) => void)
+    | null,
   { deep = false, immediate = false } = {}
 ) {
   let getter;
@@ -67,15 +69,27 @@ function doWatch(
 
   let oldValue;
 
+  let clean;
+  const onCleanup = (fn: () => void) => {
+    clean = () => {
+      fn();
+      clean = undefined;
+    };
+  };
+
   // job 函数处理逻辑
   const job = () => {
     // 步骤1：重新运行 effect，获取最新值
     const newValue = effect.run();
     // 此时 effect.run() 会再次执行 getter 函数，收集最新的依赖
 
+    if (clean) {
+      clean();
+    }
+
     if (callback) {
       // 步骤2：调用用户传入的回调函数（watch 模式）
-      callback(newValue, oldValue);
+      callback(newValue, oldValue, onCleanup);
       // 参数：newValue - 新值，oldValue - 旧值
       // 如果是第一次执行，oldValue 是 undefined
 
@@ -94,7 +108,12 @@ function doWatch(
   // 立即执行一次收集初始依赖
   oldValue = effect.run();
 
-  return effect;
+  //unwatch 函数
+  const unwatch = () => {
+    effect.stop();
+  };
+
+  return unwatch;
 }
 
 // watchEffect 函数

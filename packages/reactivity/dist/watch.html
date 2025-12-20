@@ -35,19 +35,19 @@
       const name = document.getElementById("name");
       const age = document.getElementById("age");
 
-      // watch(
-      //   state,
-      //   (newVal, oldVal) => {
-      //     console.log(newVal, "new", oldVal, "old");
-      //   },
-      //   {
-      //     deep: true,
-      //   }
-      // );
-      watchEffect(() => {
-        name.innerHTML = state.name;
-        age.innerHTML = state.age;
-      });
+      const unwatch = watch(
+        state,
+        (newVal, oldVal) => {
+          console.log(newVal, "new", oldVal, "old");
+        },
+        {
+          deep: true,
+        }
+      );
+      // watchEffect(() => {
+      //   name.innerHTML = state.name;
+      //   age.innerHTML = state.age;
+      // });
 
       setTimeout(() => {
         state.name = "aliasName:Jack";

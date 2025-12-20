@@ -63,6 +63,14 @@ var ReactiveEffect = class {
       activeEffect = lastEffect;
     }
   }
+  // 停止effect 依赖收集
+  stop() {
+    if (this.active) {
+      preCleanEffect(this);
+      postCleanEffect(this);
+      this.active = false;
+    }
+  }
 };
 function cleanDepEffect(dep, effect3) {
   dep.delete(effect3);
@@ -220,7 +228,7 @@ function trackRefValue(ref2) {
   if (activeEffect) {
     trackEffect(
       activeEffect,
-      ref2.dep = createDep(() => ref2.dep = void 0, "undefined")
+      ref2.dep = ref2.dep || createDep(() => ref2.dep = void 0, "undefined")
     );
   }
 }
@@ -349,10 +357,20 @@ function doWatch(source, callback, { deep = false, immediate = false } = {}) {
     getter = () => source;
   }
   let oldValue;
+  let clean;
+  const onCleanup = (fn) => {
+    clean = () => {
+      fn();
+      clean = void 0;
+    };
+  };
   const job = () => {
     const newValue = effect3.run();
+    if (clean) {
+      clean();
+    }
     if (callback) {
-      callback(newValue, oldValue);
+      callback(newValue, oldValue, onCleanup);
       oldValue = newValue;
     }
   };
@@ -361,7 +379,10 @@ function doWatch(source, callback, { deep = false, immediate = false } = {}) {
     job();
   }
   oldValue = effect3.run();
-  return effect3;
+  const unwatch = () => {
+    effect3.stop();
+  };
+  return unwatch;
 }
 function watchEffect(source, options) {
   return doWatch(source, null, options);
