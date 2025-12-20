@@ -1,6 +1,10 @@
 import { mutableHandlers } from "./basehandler";
 import { ReactiveFlags } from "./constans";
 
+export function isReactive(value: any): boolean {
+  return !!(value && value[ReactiveFlags.IS_REACTIVE]);
+}
+
 export function isObject(val: any) {
   return typeof val === "object" && val !== null;
 }

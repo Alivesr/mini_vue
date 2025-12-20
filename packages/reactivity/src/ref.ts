@@ -3,6 +3,10 @@ import { toReactive } from "./reactive";
 import { createDep } from "./reactiveEffect";
 import { triggerEffects } from "./effect";
 
+export function isRef(r: any): boolean {
+  return !!(r && r.__v_isRef === true);
+}
+
 export function ref(value) {
   return createRef(value);
 }

@@ -159,6 +159,9 @@ var mutableHandlers = {
 };
 
 // packages/reactivity/src/reactive.ts
+function isReactive(value) {
+  return !!(value && value["__v_isReactive" /* IS_REACTIVE */]);
+}
 function isObject(val) {
   return typeof val === "object" && val !== null;
 }
@@ -185,6 +188,9 @@ function toReactive(value) {
 }
 
 // packages/reactivity/src/ref.ts
+function isRef(r) {
+  return !!(r && r.__v_isRef === true);
+}
 function ref(value) {
   return createRef(value);
 }
@@ -308,6 +314,49 @@ function computed(getterOrOptions) {
   }
   return new ComputedRefImpl(getter, setter);
 }
+
+// packages/reactivity/src/apiWatch.ts
+function watch(source, callback, options = {}) {
+  return doWatch(source, callback, options);
+}
+function traverse(source, depth, currentDepth = 0, seen = /* @__PURE__ */ new Set()) {
+  if (typeof source !== "object" || source === null) {
+    return source;
+  }
+  if (seen.has(source)) {
+    return source;
+  }
+  seen.add(source);
+  if (depth !== void 0 && currentDepth >= depth) {
+    return source;
+  }
+  if (isReactive(source) || isRef(source)) {
+    for (let key in source) {
+      traverse(source[key], depth, currentDepth + 1, seen);
+    }
+  }
+  return source;
+}
+function doWatch(source, callback, { deep = false } = {}) {
+  let getter;
+  if (typeof source === "function") {
+    getter = source;
+  } else if (isReactive(source)) {
+    getter = () => traverse(source, deep ? void 0 : 1);
+  } else if (isRef(source)) {
+    getter = () => source.value;
+  } else {
+    getter = () => source;
+  }
+  let oldValue;
+  const job = () => {
+    const newValue = effect3.run();
+    callback(newValue, oldValue);
+    oldValue = newValue;
+  };
+  const effect3 = new ReactiveEffect(getter, job);
+  oldValue = effect3.run();
+}
 export {
   ReactiveEffect,
   activeEffect,
@@ -315,6 +364,8 @@ export {
   computed,
   effect,
   isObject,
+  isReactive,
+  isRef,
   proxyRefs,
   reactive,
   ref,
@@ -324,6 +375,7 @@ export {
   trackEffect,
   trackRefValue,
   triggerEffects,
-  triggerRefValue
+  triggerRefValue,
+  watch
 };
 //# sourceMappingURL=reactivity.esm.js.map
