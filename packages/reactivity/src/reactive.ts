@@ -1,5 +1,6 @@
 import { mutableHandlers } from "./basehandler";
 import { ReactiveFlags } from "./constans";
+
 export function isObject(val: any) {
   return typeof val === "object" && val !== null;
 }
@@ -13,16 +14,19 @@ function createReactiveObject(target: object) {
     return;
   }
   // 这里通过target[ReactiveFlags.IS_REACTIVE]来触发getter 返回true
+  // 说明目标对象已经是响应式对象了 不需要再代理
   if (target[ReactiveFlags.IS_REACTIVE]) {
     return target;
   }
 
   // 如果缓存中存在，则返回缓存中的代理对象
+  // 说明目标对象已经被代理过了 不需要再代理
   if (reactiveMap.has(target)) {
     return reactiveMap.get(target);
   }
 
   // 创建代理对象
+  //mutableHandlers 是一个代理处理函数 用于处理代理对象的读写操作
   let proxy = new Proxy(target, mutableHandlers);
   reactiveMap.set(target, proxy);
   return proxy;

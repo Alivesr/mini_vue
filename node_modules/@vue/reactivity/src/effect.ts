@@ -90,13 +90,16 @@ export function trackEffect(effect, dep) {
 
   // 在effect中存deps主要是为了清理 在dep是中存effect主要是为了触发
   if (dep.get(effect) !== effect._trackId) {
+    // 1.在dep中存effect
     dep.set(effect, effect._trackId);
+
     //这里每次是从零开始记录依赖的dep,如果dep 已经存在,说明是同一个dep,就不需要记录了
     let oldDeps = effect.deps[effect._depsLength];
     if (oldDeps !== dep) {
       if (oldDeps) {
         cleanDepEffect(oldDeps, effect);
       }
+      //2.在effect中存dep
       effect.deps[effect._depsLength++] = dep;
       //只替换的话 并没有清理dep中的effect 还会重新触发
     } else {

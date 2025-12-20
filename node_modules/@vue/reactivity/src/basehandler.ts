@@ -36,7 +36,6 @@ export const mutableHandlers: ProxyHandler<object> = {
       // 触发更新
       trigger(target, key, value, oldValue);
     }
-
     return result;
   },
 };
