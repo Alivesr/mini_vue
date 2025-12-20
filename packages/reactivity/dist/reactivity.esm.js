@@ -337,7 +337,7 @@ function traverse(source, depth, currentDepth = 0, seen = /* @__PURE__ */ new Se
   }
   return source;
 }
-function doWatch(source, callback, { deep = false } = {}) {
+function doWatch(source, callback, { deep = false, immediate = false } = {}) {
   let getter;
   if (typeof source === "function") {
     getter = source;
@@ -351,11 +351,20 @@ function doWatch(source, callback, { deep = false } = {}) {
   let oldValue;
   const job = () => {
     const newValue = effect3.run();
-    callback(newValue, oldValue);
-    oldValue = newValue;
+    if (callback) {
+      callback(newValue, oldValue);
+      oldValue = newValue;
+    }
   };
   const effect3 = new ReactiveEffect(getter, job);
+  if (immediate) {
+    job();
+  }
   oldValue = effect3.run();
+  return effect3;
+}
+function watchEffect(source, options) {
+  return doWatch(source, null, options);
 }
 export {
   ReactiveEffect,
@@ -376,6 +385,7 @@ export {
   trackRefValue,
   triggerEffects,
   triggerRefValue,
-  watch
+  watch,
+  watchEffect
 };
 //# sourceMappingURL=reactivity.esm.js.map

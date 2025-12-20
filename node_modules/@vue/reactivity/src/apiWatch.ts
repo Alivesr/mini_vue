@@ -45,8 +45,8 @@ function traverse(
 
 function doWatch(
   source: any,
-  callback: (newVal: any, oldVal: any) => void,
-  { deep = false } = {}
+  callback: ((newVal: any, oldVal: any) => void) | null,
+  { deep = false, immediate = false } = {}
 ) {
   let getter;
 
@@ -67,23 +67,41 @@ function doWatch(
 
   let oldValue;
 
-  //job就是依赖函数
+  // job 函数处理逻辑
   const job = () => {
     // 步骤1：重新运行 effect，获取最新值
     const newValue = effect.run();
     // 此时 effect.run() 会再次执行 getter 函数，收集最新的依赖
 
-    // 步骤2：调用用户传入的回调函数
-    callback(newValue, oldValue);
-    // 参数：newValue - 新值，oldValue - 旧值
-    // 如果是第一次执行，oldValue 是 undefined
+    if (callback) {
+      // 步骤2：调用用户传入的回调函数（watch 模式）
+      callback(newValue, oldValue);
+      // 参数：newValue - 新值，oldValue - 旧值
+      // 如果是第一次执行，oldValue 是 undefined
 
-    // 步骤3：更新 oldValue 为当前值，为下一次变化做准备
-    oldValue = newValue;
+      // 步骤3：更新 oldValue 为当前值，为下一次变化做准备
+      oldValue = newValue;
+    }
   };
 
   const effect = new ReactiveEffect(getter, job);
 
+  // 步骤4：如果 immediate 为 true，立即执行一次
+  if (immediate) {
+    job();
+  }
+
   // 立即执行一次收集初始依赖
   oldValue = effect.run();
+
+  return effect;
+}
+
+// watchEffect 函数
+
+export function watchEffect(
+  source: () => any,
+  options?: { immediate?: boolean }
+) {
+  return doWatch(source, null, options);
 }

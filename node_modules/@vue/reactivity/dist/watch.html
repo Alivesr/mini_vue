@@ -20,6 +20,7 @@
         proxyRefs,
         computed,
         watch,
+        watchEffect,
       } from "./reactivity.esm.js";
       const origin = {
         name: "John",
@@ -34,15 +35,19 @@
       const name = document.getElementById("name");
       const age = document.getElementById("age");
 
-      watch(
-        state,
-        (newVal, oldVal) => {
-          console.log(newVal, oldVal);
-        },
-        {
-          deep: true,
-        }
-      );
+      // watch(
+      //   state,
+      //   (newVal, oldVal) => {
+      //     console.log(newVal, "new", oldVal, "old");
+      //   },
+      //   {
+      //     deep: true,
+      //   }
+      // );
+      watchEffect(() => {
+        name.innerHTML = state.name;
+        age.innerHTML = state.age;
+      });
 
       setTimeout(() => {
         state.name = "aliasName:Jack";
