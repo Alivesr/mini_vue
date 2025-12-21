@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../src/index.ts"],
+  "sourcesContent": ["export function createRenderer(rendererOptions) {\r\n  //core \u4E0D\u5173\u5FC3\u5982\u4F55\u6E32\u67D3\r\n\r\n  const {\r\n    insert: hostInsert,\r\n    remove: hostRemove,\r\n    patchProp: hostPatchProp,\r\n    createElement: hostCreateElement,\r\n    createText: hostCreateText,\r\n    setText: hostSetText,\r\n    setElementText: hostSetElementText,\r\n    parentNode: hostParentNode,\r\n    nextSibling: hostNextSibling,\r\n  } = rendererOptions;\r\n\r\n  const render = (vnode, container) => {\r\n    console.log(vnode, container);\r\n  };\r\n  return {\r\n    render,\r\n  };\r\n}\r\n"],
+  "mappings": ";AAAO,SAAS,eAAe,iBAAiB;AAG9C,QAAM;AAAA,IACJ,QAAQ;AAAA,IACR,QAAQ;AAAA,IACR,WAAW;AAAA,IACX,eAAe;AAAA,IACf,YAAY;AAAA,IACZ,SAAS;AAAA,IACT,gBAAgB;AAAA,IAChB,YAAY;AAAA,IACZ,aAAa;AAAA,EACf,IAAI;AAEJ,QAAM,SAAS,CAAC,OAAO,cAAc;AACnC,YAAQ,IAAI,OAAO,SAAS;AAAA,EAC9B;AACA,SAAO;AAAA,IACL;AAAA,EACF;AACF;",
+  "names": []
+}

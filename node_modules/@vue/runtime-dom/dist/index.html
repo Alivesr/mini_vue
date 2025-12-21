@@ -9,15 +9,15 @@
     <div id="app"></div>
     <script type="module">
       import {
-        createRenderer,
-        render,
+        // createRenderer,
+        // render,
         h,
       } from "/node_modules/vue/dist/vue.runtime.esm-browser.js";
       //1.createRenderer 创建渲染器
       //2.render 使用内置的渲染器来进行渲染 (渲染dom元素的)
       //3.h 创建虚拟节点
 
-      import { rendererOptions } from "./runtime-dom.esm.js";
+      import { render } from "./runtime-dom.esm.js";
       const app = document.getElementById("app");
 
       // h 创建虚拟节点
@@ -46,11 +46,18 @@
       //   },
       // });
 
-      const renderer = createRenderer(rendererOptions);
-      renderer.render(ele, app);
+      // const renderer = createRenderer(rendererOptions);
+      // renderer.render(ele, app);
 
       // console.log(ele);
-      // render(ele, app);
+
+      let ele1 = h("h1", { style: { color: "bule" } }, ["Hello World", "123"]);
+      render(ele, app);
+
+      // setTimeout(() => {
+      //   console.log(123);
+      //   render(ele1, app);
+      // }, 2000);
     </script>
   </body>
 </html>
