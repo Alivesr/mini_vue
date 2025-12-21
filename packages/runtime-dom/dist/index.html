@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module">
+      import {
+        createRenderer,
+        render,
+        h,
+      } from "/node_modules/vue/dist/vue.runtime.esm-browser.js";
+      //1.createRenderer 创建渲染器
+      //2.render 使用内置的渲染器来进行渲染 (渲染dom元素的)
+      //3.h 创建虚拟节点
+
+      import { rendererOptions } from "./runtime-dom.esm.js";
+      const app = document.getElementById("app");
+
+      // h 创建虚拟节点
+      let ele = h(
+        "h1",
+        {
+          style: { color: "red", class: "title" },
+          class: "title",
+          onClick: () => {
+            alert("click");
+          },
+        },
+        "Hello World"
+      );
+
+      // const renderer = createRenderer({
+      //   createElement(type) {
+      //     //需要渲染以一个元素
+      //     return document.createElement("h1");
+      //   },
+      //   setElementText(el, text) {
+      //     el.textContent = text;
+      //   },
+      //   insert(el, container) {
+      //     container.appendChild(el);
+      //   },
+      // });
+
+      const renderer = createRenderer(rendererOptions);
+      renderer.render(ele, app);
+
+      // console.log(ele);
+      // render(ele, app);
+    </script>
+  </body>
+</html>
