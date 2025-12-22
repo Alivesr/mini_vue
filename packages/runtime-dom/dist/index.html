@@ -8,16 +8,21 @@
   <body>
     <div id="app"></div>
     <script type="module">
-      import {
-        // createRenderer,
-        // render,
-        h,
-      } from "/node_modules/vue/dist/vue.runtime.esm-browser.js";
+      // import {
+      //   h,
+      //   // createRenderer,
+      //   render,
+      // } from "/node_modules/vue/dist/vue.runtime.esm-browser.js";
+
+      // 可能是一个类型
+      //h 的使用方法 h(类型,属性,儿子)
+      //h (类型,儿子)
+
       //1.createRenderer 创建渲染器
       //2.render 使用内置的渲染器来进行渲染 (渲染dom元素的)
       //3.h 创建虚拟节点
 
-      import { render } from "./runtime-dom.esm.js";
+      import { h, render } from "./runtime-dom.esm.js";
       const app = document.getElementById("app");
 
       // h 创建虚拟节点
@@ -32,6 +37,13 @@
         },
         "Hello World"
       );
+
+      //1.两个参数 第二个参数可能是属性，或者虚拟节点（_V_isVnode）
+      //2.第二个参数就是一个数组一>儿子
+      //3.其他情况就是属性
+      //4.直接传递非对象的，文本
+      //5.不能出现三个参数的时候第二个不是属性
+      //
 
       // const renderer = createRenderer({
       //   createElement(type) {
@@ -51,8 +63,10 @@
 
       // console.log(ele);
 
-      let ele1 = h("h1", { style: { color: "bule" } }, ["Hello World", "123"]);
-      render(ele, app);
+      // let ele1 = h("h1", { style: { color: "bule" } }, ["Hello World", "123"]);
+      let ele2 = h("div", { style: { color: "red" } }, "Hello World");
+      console.log(ele2);
+      render(ele2, app);
 
       // setTimeout(() => {
       //   console.log(123);

@@ -20,7 +20,7 @@ export const nodeOps = {
   //创建元素节点
   createElement(type) {
     //需要渲染以一个元素
-    return document.createElement("h1");
+    return document.createElement(type);
   },
   //设置文本节点
   setText(el, text) {

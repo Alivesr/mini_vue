@@ -17,7 +17,7 @@ var nodeOps = {
   },
   //创建元素节点
   createElement(type) {
-    return document.createElement("h1");
+    return document.createElement(type);
   },
   //设置文本节点
   setText(el, text) {
@@ -108,7 +108,67 @@ function patchProp(el, key, prevValue, nextValue) {
   }
 }
 
-// packages/runtime-core/src/index.ts
+// packages/reactivity/src/reactive.ts
+function isObject(val) {
+  return typeof val === "object" && val !== null;
+}
+
+// packages/shared/src/index.ts
+function isString(val) {
+  return typeof val == "string";
+}
+
+// packages/runtime-core/src/createVnode.ts
+function createVnode(type, props, children) {
+  const shapeFlag = isString(type) ? 1 /* ELEMENT */ : 0;
+  const vnode = {
+    __v_isVnode: true,
+    type,
+    props,
+    children,
+    key: props?.key,
+    el: null,
+    // 虚拟节点需要对应的真实节点是
+    shapeFlag
+  };
+  if (children) {
+    if (Array.isArray(children)) {
+      vnode.shapeFlag |= 16 /* ARRAY_CHILDREN */;
+    } else {
+      children = String(children);
+      vnode.shapeFlag |= 8 /* TEXT_CHILDREN */;
+    }
+  }
+  return vnode;
+}
+
+// packages/runtime-core/src/h.ts
+function isVnode(value) {
+  return value.__v_isVnode === true;
+}
+function h(type, propsOrChildren, children) {
+  let l = arguments.length;
+  if (l === 2) {
+    if (isObject(propsOrChildren) && !Array.isArray(propsOrChildren)) {
+      if (isVnode(propsOrChildren)) {
+        return createVnode(type, null, [propsOrChildren]);
+      } else {
+        return createVnode(type, propsOrChildren);
+      }
+    }
+    return createVnode(type, null, propsOrChildren);
+  } else {
+    if (l > 3) {
+      children = Array.from(arguments).slice(2);
+    }
+    if (l == 3 && isVnode(children)) {
+      children = [children];
+    }
+    return createVnode(type, propsOrChildren, children);
+  }
+}
+
+// packages/runtime-core/src/render.ts
 function createRenderer(rendererOptions2) {
   const {
     insert: hostInsert,
@@ -168,6 +228,8 @@ var render = (vnode, container) => {
 };
 export {
   createRenderer,
+  createVnode,
+  h,
   render,
   rendererOptions
 };
