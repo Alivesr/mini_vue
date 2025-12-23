@@ -56,6 +56,7 @@ export class ReactiveEffect {
 
   run() {
     this._dirtyLevel = DirtyLevels.NotDirty; // 执行effect 后,将dirtyLevel 设为 NotDirty
+    //如果effect 不再活跃,则不执行
     if (!this.active) {
       return this.fn();
     }
@@ -69,6 +70,7 @@ export class ReactiveEffect {
       return this.fn(); // 执行用户传入的函数
     } finally {
       this._running--;
+      //清理当前effect剩余的dep
       postCleanEffect(this);
       activeEffect = lastEffect;
     }

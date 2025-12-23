@@ -10,15 +10,10 @@ export const mutableHandlers: ProxyHandler<object> = {
     if (key === ReactiveFlags.IS_REACTIVE) {
       return true;
     }
-
     track(target, key); //依赖收集
-
-    // console.log(activeEffect, key);
-
     // 默认行为，使用Reflect获取属性值
     // receiver是代理对象
     let res = Reflect.get(target, key, receiver);
-
     if (isObject(res)) {
       // 当取的值为对象的时候 我需要对这个对象进行递归代理
       return reactive(res);
