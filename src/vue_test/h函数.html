@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script>
+      import { h } from "vue";
+      //创建
+      const vnode = h(
+        "div",
+        {
+          class: "test",
+        },
+        "hello,render"
+      );
+
+      h("div");
+      h("div", { id: "foo" });
+
+      //attribute和property都可以用于prop
+      //vue会自动选择正确的方式来分配它
+
+      h("div", { class: "bar", innerHTML: "hello" });
+
+      //class与style 可以像在模板中一样
+      //用数组和对象的方式书写
+      h("div", { class: [foo, { bar }], style: { color: "red" } });
+
+      //事件监听器应以Onxxx的方式书写
+      h("div", { onClick: () => {} });
+
+      //children可以是一个字符串
+      h("div", { id: "foo" }, "hello");
+
+      //没有prop的时候可以省略不写
+      h("div", "hello");
+      h("div", [h("span", "hello")]);
+
+      //children数组可以同时包含vnode和字符串
+      h("div", ["hello", h("span", "hello")]);
+
+      export function h(type, propsOrChildren, children) {
+        //获取用户传递的参数数量
+        const l = arguments.length;
+
+        //如果用户只传递了两个参数 ,那么证明第二个参数可能是children也可能是props
+        if (l === 2) {
+          //如果第二个参数是对象,但不是数组,则第二个参数有两种可能1.是props 2.Vnode
+          if (isObject(propsOrChildren) && !isArray(propsOrChildren)) {
+            //如果是VNode对象 ,那么第二个参数代表children
+            if (isVnode(propsOrChildren)) {
+              return createVnode(type, null, [propsOrChildren]);
+            } else {
+              //否则第二个参数代表props
+              return createVnode(type, propsOrChildren);
+            }
+          }
+          //如果第二个参数不是单纯的Object,则第二个参数代表了children
+          else {
+            return createVnode(type, null, propsOrChildren);
+          }
+        } //如果用户传递了三个参数,则第二个参数一定是props,第三个参数一定是children
+        else {
+          //如果传递的参数大于3个,则说明第三个参数到最后一个参数都是children
+          if (l > 3) {
+            children = Array.prototype.slice.call(arguments, 2);
+          } else if (l === 3 && isVnode(children)) {
+            //如果第三个参数是单个vnode,则包装成数组
+            children = [children];
+          }
+          //触发创建vnode的函数
+          return createVnode(type, propsOrChildren, children);
+        }
+      }
+
+      const shapeFlags = isString(type)
+        ? ShapeFlags.ELEMENT
+        : isObject(type)
+        ? ShapeFlags.STATEFUL_COMPONENT
+        : 0;
+    </script>
+  </body>
+</html>
