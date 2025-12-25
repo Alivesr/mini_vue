@@ -344,6 +344,9 @@ function createRenderer(rendererOptions2) {
   };
   const render2 = (vnode, container) => {
     if (vnode == null) {
+      if (container._vnode) {
+        unmount(container._vnode);
+      }
     } else {
       patch(container._vnode || null, vnode, container);
     }

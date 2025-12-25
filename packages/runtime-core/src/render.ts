@@ -198,9 +198,9 @@ export function createRenderer(rendererOptions) {
     //将虚拟节点渲染成真实节点
     //_vnode第一次为null，之后为上一次的虚拟节点
     if (vnode == null) {
-      // if (container._vnode) {
-      //   hostRemove(container._vnode.el);
-      // }
+      if (container._vnode) {
+        unmount(container._vnode);
+      }
     } else {
       patch(container._vnode || null, vnode, container);
     }

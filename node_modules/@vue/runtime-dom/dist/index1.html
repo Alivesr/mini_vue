@@ -9,26 +9,11 @@
     <div id="app"></div>
     <script type="module">
       import { h, render, Fragment, Text, Comment } from "./runtime-dom.esm.js";
-      const vnode = h(
-        "div",
-        {
-          class: "test",
-        },
-        "hello render"
-      );
-
+      const vnode = h("div", { class: "test" }, "hello render");
       render(vnode, document.querySelector("#app"));
 
-      // 延迟两秒，生成新的 vnode，进行更新操作
       setTimeout(() => {
-        const vnode2 = h(
-          "h1",
-          {
-            class: "active",
-          },
-          "update"
-        );
-        render(vnode2, document.querySelector("#app"));
+        render(null, document.querySelector("#app"));
       }, 2000);
     </script>
   </body>
