@@ -1,7 +1,8 @@
 import { ShapeFlags } from "@vue/shared";
 import { Text, Comment, Fragment } from "@vue/runtime-core";
-import { EMPTY_OBJ } from "@vue/shared";
+import { EMPTY_OBJ, isString } from "@vue/shared";
 import { isSameVNodeType } from "./createVnode";
+import { normalizeVNode } from "./componentRenderUtils";
 
 export function createRenderer(rendererOptions) {
   //core 不关心如何渲染
@@ -16,6 +17,7 @@ export function createRenderer(rendererOptions) {
     setText: hostSetText,
     parentNode: hostParentNode,
     nextSibling: hostNextSibling,
+    createComment: hostCreateComment,
   } = rendererOptions;
 
   /**
@@ -123,16 +125,68 @@ export function createRenderer(rendererOptions) {
     }
   };
 
+  const processText = (oldVNode, newVNode, container, anchor) => {
+    // 不存在旧的节点，则为 挂载 操作
+    if (oldVNode == null) {
+      // 生成节点
+      newVNode.el = hostCreateText(newVNode.children as string);
+      // 挂载
+      hostInsert(newVNode.el, container, anchor);
+    }
+    // 存在旧的节点，则为 更新 操作
+    else {
+      const el = (newVNode.el = oldVNode.el!);
+      if (newVNode.children !== oldVNode.children) {
+        hostSetText(el, newVNode.children as string);
+      }
+    }
+  };
+
+  /**
+   * Comment 的打补丁操作
+   */
+  const processCommentNode = (oldVNode, newVNode, container, anchor) => {
+    if (oldVNode == null) {
+      // 生成节点
+      newVNode.el = hostCreateComment((newVNode.children as string) || "");
+      // 挂载
+      hostInsert(newVNode.el, container, anchor);
+    } else {
+      // 无更新
+      newVNode.el = oldVNode.el;
+    }
+  };
+
+  /**
+   * Fragment 的打补丁操作
+   */
+  const processFragment = (oldVNode, newVNode, container, anchor) => {
+    if (oldVNode == null) {
+      mountChildren(newVNode.children, container);
+    } else {
+      patchChildren(oldVNode, newVNode, container, anchor);
+    }
+  };
   //卸载节点
   const unmount = (vnode) => {
     hostRemove(vnode.el!);
   };
 
   //挂载子节点
-  const mountChildren = (children, container) => {
+  // const mountChildren = (children, container) => {
+  //   for (let i = 0; i < children.length; i++) {
+  //     //可能是纯文本 进行递归设置内部内容
+  //     patch(null, children[i], container);
+  //   }
+  // };
+  const mountChildren = (children, container, anchor?) => {
+    // 处理 Cannot assign to read only property '0' of string 'xxx'
+    if (isString(children)) {
+      children = children.split("");
+    }
     for (let i = 0; i < children.length; i++) {
-      //可能是纯文本 进行递归设置内部内容
-      patch(null, children[i], container);
+      const child = (children[i] = normalizeVNode(children[i]));
+      patch(null, child, container, anchor);
     }
   };
 
@@ -176,12 +230,15 @@ export function createRenderer(rendererOptions) {
     switch (type) {
       case Text:
         // TODO: Text
+        processText(n1, n2, container, anchor);
         break;
       case Comment:
         // TODO: Comment
+        processCommentNode(n1, n2, container, anchor);
         break;
       case Fragment:
         // TODO: Fragment
+        processFragment(n1, n2, container, anchor);
         break;
       default:
         if (shapeFlag & ShapeFlags.ELEMENT) {

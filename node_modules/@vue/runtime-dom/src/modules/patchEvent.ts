@@ -12,6 +12,7 @@ export default function patchEvent(el, name, nextValue) {
   const invokers = el._vei || (el._vei = {});
   const eventName = name.slice(2).toLowerCase();
 
+  //如果当前事件存在缓存，并且存在新的事件行为，则判定为更新操作。直接更新 invoker 的 value 即可
   const existingInvokers = invokers[name]; //是否存在同名的事件绑定
 
   //同名事件换绑 假如将hander1换绑为hander2 之前existingInvoker.value = handler1
