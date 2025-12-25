@@ -1,15 +1,16 @@
 import { ShapeFlags } from "@vue/shared";
+import { Text, Comment, Fragment } from "@vue/runtime-core";
 export function createRenderer(rendererOptions) {
   //core 不关心如何渲染
 
   const {
     insert: hostInsert,
-    remove: hostRemove,
     patchProp: hostPatchProp,
     createElement: hostCreateElement,
+    setElementText: hostSetElementText,
+    remove: hostRemove,
     createText: hostCreateText,
     setText: hostSetText,
-    setElementText: hostSetElementText,
     parentNode: hostParentNode,
     nextSibling: hostNextSibling,
   } = rendererOptions;
@@ -26,18 +27,17 @@ export function createRenderer(rendererOptions) {
   const mountElement = (vnode, container) => {
     //从vnode中获取关键元素
     const { type, children, props, shapeFlag } = vnode;
-    // console.log(props, "props");
-    // console.log(type, "type"); //h1 //标签类型
 
     //根据标签类型创建真实节点
     const el = hostCreateElement(type);
+    vnode.el = el;
+
     //设置属性
     if (props) {
       for (const key in props) {
         hostPatchProp(el, key, null, props[key]);
       }
     }
-    // console.log(vnode);
     //根据类型 处理子节点
     // hostSetElementText(el, children);
     if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
@@ -50,11 +50,29 @@ export function createRenderer(rendererOptions) {
     hostInsert(el, container);
   };
 
-  const patch = (n1, n2, container) => {
+  //对比更新节点
+  const patch = (n1, n2, container, anchor = null) => {
     if (n1 == n2) {
       return;
     }
-    //初始化
+    const { type, shapeFlag } = n2;
+    switch (type) {
+      case Text:
+        // TODO: Text
+        break;
+      case Comment:
+        // TODO: Comment
+        break;
+      case Fragment:
+        // TODO: Fragment
+        break;
+      default:
+        if (shapeFlag & ShapeFlags.ELEMENT) {
+          // TODO: Element
+        } else if (shapeFlag & ShapeFlags.COMPONENT) {
+          // TODO: 组件
+        }
+    }
     if (n1 === null) {
       mountElement(n2, container);
     }
@@ -64,7 +82,13 @@ export function createRenderer(rendererOptions) {
   const render = (vnode, container) => {
     //将虚拟节点渲染成真实节点
     //_vnode第一次为null，之后为上一次的虚拟节点
-    patch(container._vnode || null, vnode, container);
+    if (vnode == null) {
+      if (container._vnode) {
+        hostRemove(container._vnode.el);
+      }
+    } else {
+      patch(container._vnode || null, vnode, container);
+    }
 
     container._vnode = vnode;
   };

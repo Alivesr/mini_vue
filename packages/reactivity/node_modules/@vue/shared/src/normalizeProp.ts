@@ -24,7 +24,7 @@ export function normalizeClass(value: unknown): string {
     // for in 获取到所有的 key，这里的 key（name）即为类名。value 为 boolean 值
     for (const name in value as object) {
       // 把 value 当做 boolean 来看，拼接 name
-      if ((value as object)[name]) {
+      if ((value as Record<string, any>)[name]) {
         res += name + " ";
       }
     }

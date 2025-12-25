@@ -224,12 +224,12 @@ function h(type, propsOrChildren, children) {
 function createRenderer(rendererOptions2) {
   const {
     insert: hostInsert,
-    remove: hostRemove,
     patchProp: hostPatchProp,
     createElement: hostCreateElement,
+    setElementText: hostSetElementText,
+    remove: hostRemove,
     createText: hostCreateText,
     setText: hostSetText,
-    setElementText: hostSetElementText,
     parentNode: hostParentNode,
     nextSibling: hostNextSibling
   } = rendererOptions2;
@@ -241,6 +241,7 @@ function createRenderer(rendererOptions2) {
   const mountElement = (vnode, container) => {
     const { type, children, props, shapeFlag } = vnode;
     const el = hostCreateElement(type);
+    vnode.el = el;
     if (props) {
       for (const key in props) {
         hostPatchProp(el, key, null, props[key]);
@@ -253,16 +254,35 @@ function createRenderer(rendererOptions2) {
     }
     hostInsert(el, container);
   };
-  const patch = (n1, n2, container) => {
+  const patch = (n1, n2, container, anchor = null) => {
     if (n1 == n2) {
       return;
+    }
+    const { type, shapeFlag } = n2;
+    switch (type) {
+      case Text:
+        break;
+      case Comment:
+        break;
+      case Fragment:
+        break;
+      default:
+        if (shapeFlag & 1 /* ELEMENT */) {
+        } else if (shapeFlag & 6 /* COMPONENT */) {
+        }
     }
     if (n1 === null) {
       mountElement(n2, container);
     }
   };
   const render2 = (vnode, container) => {
-    patch(container._vnode || null, vnode, container);
+    if (vnode == null) {
+      if (container._vnode) {
+        hostRemove(container._vnode.el);
+      }
+    } else {
+      patch(container._vnode || null, vnode, container);
+    }
     container._vnode = vnode;
   };
   return {
@@ -272,8 +292,12 @@ function createRenderer(rendererOptions2) {
 
 // packages/runtime-dom/src/index.ts
 var rendererOptions = Object.assign({ patchProp }, nodeOps);
-var render = (vnode, container) => {
-  return createRenderer(rendererOptions).render(vnode, container);
+var renderer;
+function ensureRenderer() {
+  return renderer || (renderer = createRenderer(rendererOptions));
+}
+var render = (...args) => {
+  ensureRenderer().render(...args);
 };
 export {
   Comment,

@@ -12,14 +12,14 @@
       const vnode = h(
         "div",
         {
-          class: {
-            red: true,
-          },
+          class: "test",
         },
-        "增强的 class"
+        "hello render"
       );
 
       console.log(vnode);
+
+      render(vnode, document.querySelector("#app"));
     </script>
   </body>
 </html>

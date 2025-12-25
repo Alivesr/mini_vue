@@ -8,9 +8,17 @@ import { createRenderer } from "@vue/runtime-core";
 //将节点操作和属性操作合并
 const rendererOptions = Object.assign({ patchProp }, nodeOps);
 
-export const render = (vnode, container) => {
-  return createRenderer(rendererOptions).render(vnode, container);
+let renderer;
+function ensureRenderer() {
+  return renderer || (renderer = createRenderer(rendererOptions));
+}
+
+export const render = (...args) => {
+  ensureRenderer().render(...args);
 };
+// export const render = (vnode, container) => {
+//   return createRenderer(rendererOptions).render(vnode, container);
+// };
 
 export { rendererOptions };
 
