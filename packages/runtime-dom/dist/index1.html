@@ -9,11 +9,30 @@
     <div id="app"></div>
     <script type="module">
       import { h, render, Fragment, Text, Comment } from "./runtime-dom.esm.js";
-      const vnode = h("div", { class: "test" }, "hello render");
+      const vnode = h(
+        "div",
+        {
+          style: {
+            color: "red",
+          },
+        },
+        "你好，世界"
+      );
+      // 挂载
       render(vnode, document.querySelector("#app"));
 
       setTimeout(() => {
-        render(null, document.querySelector("#app"));
+        const vnode2 = h(
+          "div",
+          {
+            style: {
+              fontSize: "32px",
+            },
+          },
+          "你好，世界"
+        );
+        // 挂载
+        render(vnode2, document.querySelector("#app"));
       }, 2000);
     </script>
   </body>

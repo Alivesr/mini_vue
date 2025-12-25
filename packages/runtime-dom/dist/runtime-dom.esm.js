@@ -46,19 +46,62 @@ function patchClass(el, value) {
   }
 }
 
-// packages/runtime-dom/src/modules/patchStyle.ts
-function patchStyle(el, prevValue, nextValue) {
-  let style = el.style;
-  for (let key in nextValue) {
-    style[key] = nextValue[key];
-  }
-  if (prevValue) {
-    for (let key in prevValue) {
-      if (nextValue[key] == null) {
-        style[key] = null;
+// packages/shared/src/normalizeProp.ts
+function normalizeClass(value) {
+  let res = "";
+  if (isString(value)) {
+    res = value;
+  } else if (isArray(value)) {
+    for (let i = 0; i < value.length; i++) {
+      const normalized = normalizeClass(value[i]);
+      if (normalized) {
+        res += normalized + " ";
+      }
+    }
+  } else if (isObject(value)) {
+    for (const name in value) {
+      if (value[name]) {
+        res += name + " ";
       }
     }
   }
+  return res.trim();
+}
+
+// packages/shared/src/index.ts
+function isFunction(val) {
+  return typeof val === "function";
+}
+function isArray(val) {
+  return Array.isArray(val);
+}
+function isObject(val) {
+  return typeof val === "object" && val !== null;
+}
+function isString(val) {
+  return typeof val == "string";
+}
+var EMPTY_OBJ = Object.freeze({});
+
+// packages/runtime-dom/src/modules/patchStyle.ts
+function patchStyle(el, prevValue, nextValue) {
+  let style = el.style;
+  const isCssString = isString(nextValue);
+  if (nextValue && !isCssString) {
+    for (let key in nextValue) {
+      setStyle(style, key, nextValue[key]);
+    }
+  }
+  if (prevValue && !isCssString) {
+    for (let key in prevValue) {
+      if (nextValue[key] == null) {
+        setStyle(style, key, "");
+      }
+    }
+  }
+}
+function setStyle(style, key, value) {
+  style[key] = value;
 }
 
 // packages/runtime-dom/src/modules/patchEvent.ts
@@ -103,52 +146,35 @@ function patchProp(el, key, prevValue, nextValue) {
     return patchStyle(el, prevValue, nextValue);
   } else if (/on[^a-z]/.test(key)) {
     return patchEvent(el, key, nextValue);
+  } else if (shouldSetAsProp(el, key)) {
+    patchDOMProp(el, key, nextValue);
   } else {
-    return patchAttr(el, key, nextValue);
+    patchAttr(el, key, nextValue);
+  }
+}
+function shouldSetAsProp(el, key) {
+  if (key === "form") {
+    return false;
+  }
+  if (key === "list" && el.tagName === "INPUT") {
+    return false;
+  }
+  if (key === "type" && el.tagName === "TEXTAREA") {
+    return false;
+  }
+  return key in el;
+}
+function patchDOMProp(el, key, value) {
+  try {
+    el[key] = value;
+  } catch (e) {
   }
 }
 
 // packages/reactivity/src/reactive.ts
-function isObject(val) {
-  return typeof val === "object" && val !== null;
-}
-
-// packages/shared/src/normalizeProp.ts
-function normalizeClass(value) {
-  let res = "";
-  if (isString(value)) {
-    res = value;
-  } else if (isArray(value)) {
-    for (let i = 0; i < value.length; i++) {
-      const normalized = normalizeClass(value[i]);
-      if (normalized) {
-        res += normalized + " ";
-      }
-    }
-  } else if (isObject2(value)) {
-    for (const name in value) {
-      if (value[name]) {
-        res += name + " ";
-      }
-    }
-  }
-  return res.trim();
-}
-
-// packages/shared/src/index.ts
-function isFunction(val) {
-  return typeof val === "function";
-}
-function isArray(val) {
-  return Array.isArray(val);
-}
 function isObject2(val) {
   return typeof val === "object" && val !== null;
 }
-function isString(val) {
-  return typeof val == "string";
-}
-var EMPTY_OBJ = Object.freeze({});
 
 // packages/runtime-core/src/createVnode.ts
 var Fragment = /* @__PURE__ */ Symbol("Fragment");
@@ -167,7 +193,7 @@ function createVNode(type, props, children) {
       props.class = normalizeClass(klass);
     }
   }
-  const shapeFlag = isString(type) ? 1 /* ELEMENT */ : isObject2(type) ? 4 /* STATEFUL_COMPONENT */ : 0;
+  const shapeFlag = isString(type) ? 1 /* ELEMENT */ : isObject(type) ? 4 /* STATEFUL_COMPONENT */ : 0;
   return createBaseVNode(type, props, children, shapeFlag);
 }
 function createBaseVNode(type, props, children, shapeFlag) {
@@ -205,7 +231,7 @@ function isSameVNodeType(n1, n2) {
 function h(type, propsOrChildren, children) {
   const l = arguments.length;
   if (l === 2) {
-    if (isObject(propsOrChildren) && !Array.isArray(propsOrChildren)) {
+    if (isObject2(propsOrChildren) && !Array.isArray(propsOrChildren)) {
       if (isVnode(propsOrChildren)) {
         return createVNode(type, null, [propsOrChildren]);
       } else {
