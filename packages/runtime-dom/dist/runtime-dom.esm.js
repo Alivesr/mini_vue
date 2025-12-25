@@ -113,58 +113,110 @@ function isObject(val) {
   return typeof val === "object" && val !== null;
 }
 
+// packages/shared/src/normalizeProp.ts
+function normalizeClass(value) {
+  let res = "";
+  if (isString(value)) {
+    res = value;
+  } else if (isArray(value)) {
+    for (let i = 0; i < value.length; i++) {
+      const normalized = normalizeClass(value[i]);
+      if (normalized) {
+        res += normalized + " ";
+      }
+    }
+  } else if (isObject2(value)) {
+    for (const name in value) {
+      if (value[name]) {
+        res += name + " ";
+      }
+    }
+  }
+  return res.trim();
+}
+
 // packages/shared/src/index.ts
+function isFunction(val) {
+  return typeof val === "function";
+}
+function isArray(val) {
+  return Array.isArray(val);
+}
+function isObject2(val) {
+  return typeof val === "object" && val !== null;
+}
 function isString(val) {
   return typeof val == "string";
 }
 
 // packages/runtime-core/src/createVnode.ts
-function createVnode(type, props, children) {
-  const shapeFlag = isString(type) ? 1 /* ELEMENT */ : 0;
-  const vnode = {
-    __v_isVnode: true,
-    type,
-    props,
-    children,
-    key: props?.key,
-    el: null,
-    // 虚拟节点需要对应的真实节点是
-    shapeFlag
-  };
-  if (children) {
-    if (Array.isArray(children)) {
-      vnode.shapeFlag |= 16 /* ARRAY_CHILDREN */;
-    } else {
-      children = String(children);
-      vnode.shapeFlag |= 8 /* TEXT_CHILDREN */;
-    }
-  }
-  return vnode;
-}
-
-// packages/runtime-core/src/h.ts
+var Fragment = /* @__PURE__ */ Symbol("Fragment");
+var Text = /* @__PURE__ */ Symbol("Text");
+var Comment = /* @__PURE__ */ Symbol("Comment");
 function isVnode(value) {
   return value.__v_isVnode === true;
 }
+function isVNode(value) {
+  return value ? value.__v_isVNode === true : false;
+}
+function createVNode(type, props, children) {
+  if (props) {
+    let { class: klass, style } = props;
+    if (klass && !isString(klass)) {
+      props.class = normalizeClass(klass);
+    }
+  }
+  const shapeFlag = isString(type) ? 1 /* ELEMENT */ : isObject2(type) ? 4 /* STATEFUL_COMPONENT */ : 0;
+  return createBaseVNode(type, props, children, shapeFlag);
+}
+function createBaseVNode(type, props, children, shapeFlag) {
+  const vnode = {
+    __v_isVNode: true,
+    //标识
+    type,
+    props,
+    shapeFlag
+  };
+  normalizeChildren(vnode, children);
+  return vnode;
+}
+function normalizeChildren(vnode, children) {
+  let type = 0;
+  const { shapeFlag } = vnode;
+  if (children == null) {
+    children = null;
+  } else if (isArray(children)) {
+    type = 16 /* ARRAY_CHILDREN */;
+  } else if (typeof children === "object") {
+  } else if (isFunction(children)) {
+  } else {
+    children = String(children);
+    type = 8 /* TEXT_CHILDREN */;
+  }
+  vnode.children = children;
+  vnode.shapeFlag |= type;
+}
+
+// packages/runtime-core/src/h.ts
 function h(type, propsOrChildren, children) {
-  let l = arguments.length;
+  const l = arguments.length;
   if (l === 2) {
     if (isObject(propsOrChildren) && !Array.isArray(propsOrChildren)) {
       if (isVnode(propsOrChildren)) {
-        return createVnode(type, null, [propsOrChildren]);
+        return createVNode(type, null, [propsOrChildren]);
       } else {
-        return createVnode(type, propsOrChildren);
+        return createVNode(type, propsOrChildren);
       }
+    } else {
+      return createVNode(type, null, propsOrChildren);
     }
-    return createVnode(type, null, propsOrChildren);
   } else {
     if (l > 3) {
-      children = Array.from(arguments).slice(2);
-    }
-    if (l == 3 && isVnode(children)) {
+      children = Array.prototype.slice.call(arguments, 2);
+    } else if (l === 3 && isVnode(children)) {
       children = [children];
     }
-    return createVnode(type, propsOrChildren, children);
+    return createVNode(type, propsOrChildren, children);
   }
 }
 
@@ -188,15 +240,12 @@ function createRenderer(rendererOptions2) {
   };
   const mountElement = (vnode, container) => {
     const { type, children, props, shapeFlag } = vnode;
-    console.log(props, "props");
-    console.log(type, "type");
     const el = hostCreateElement(type);
     if (props) {
       for (const key in props) {
         hostPatchProp(el, key, null, props[key]);
       }
     }
-    console.log(vnode);
     if (shapeFlag & 8 /* TEXT_CHILDREN */) {
       hostSetElementText(el, children);
     } else if (shapeFlag & 16 /* ARRAY_CHILDREN */) {
@@ -227,9 +276,15 @@ var render = (vnode, container) => {
   return createRenderer(rendererOptions).render(vnode, container);
 };
 export {
+  Comment,
+  Fragment,
+  Text,
   createRenderer,
-  createVnode,
+  createVNode,
   h,
+  isVNode,
+  isVnode,
+  normalizeChildren,
   render,
   rendererOptions
 };

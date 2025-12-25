@@ -26,8 +26,8 @@ export function createRenderer(rendererOptions) {
   const mountElement = (vnode, container) => {
     //从vnode中获取关键元素
     const { type, children, props, shapeFlag } = vnode;
-    console.log(props, "props");
-    console.log(type, "type"); //h1 //标签类型
+    // console.log(props, "props");
+    // console.log(type, "type"); //h1 //标签类型
 
     //根据标签类型创建真实节点
     const el = hostCreateElement(type);
@@ -37,7 +37,7 @@ export function createRenderer(rendererOptions) {
         hostPatchProp(el, key, null, props[key]);
       }
     }
-    console.log(vnode);
+    // console.log(vnode);
     //根据类型 处理子节点
     // hostSetElementText(el, children);
     if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
