@@ -502,7 +502,7 @@ function applyOptions(instance) {
     mounted
   } = instance.type;
   if (beforeCreate) {
-    callHook(beforeCreate);
+    callHook(beforeCreate, instance.data);
   }
   if (dataOptions) {
     const data = dataOptions();
@@ -511,16 +511,16 @@ function applyOptions(instance) {
     }
   }
   if (created) {
-    callHook(created);
+    callHook(created, instance.data);
   }
   function registerLifecycleHook(register, hook) {
-    register(hook, instance);
+    register(hook?.bind(instance.data), instance);
   }
   registerLifecycleHook(onBeforeMount, beforeMount);
   registerLifecycleHook(onMounted, mounted);
 }
-function callHook(hook) {
-  hook();
+function callHook(hook, proxy) {
+  hook.bind(proxy)();
 }
 function setupComponent(instance) {
   debugger;
@@ -658,7 +658,17 @@ function createRenderer(rendererOptions2) {
           m();
         }
         initialVNode.el = subTree.el;
+        instance.isMounted = true;
       } else {
+        let { next, vnode } = instance;
+        if (!next) {
+          next = vnode;
+        }
+        const nextTree = renderComponentRoot(instance);
+        const prevTree = instance.subTree;
+        instance.subTree = nextTree;
+        patch(prevTree, nextTree, container, anchor);
+        next.el = nextTree.el;
       }
     };
     const effect2 = instance.effect = new ReactiveEffect(

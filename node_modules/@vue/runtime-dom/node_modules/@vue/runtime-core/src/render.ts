@@ -222,7 +222,25 @@ export function createRenderer(rendererOptions) {
 
         // 把组件根节点的 el，作为组件的 el
         initialVNode.el = subTree.el;
+        instance.isMounted = true;
       } else {
+        let { next, vnode } = instance;
+        if (!next) {
+          next = vnode;
+        }
+
+        // 获取下一次的 subTree
+        const nextTree = renderComponentRoot(instance);
+
+        // 保存对应的 subTree，以便进行更新操作
+        const prevTree = instance.subTree;
+        instance.subTree = nextTree;
+
+        // 通过 patch 进行更新操作
+        patch(prevTree, nextTree, container, anchor);
+
+        // 更新 next
+        next.el = nextTree.el;
       }
     };
 

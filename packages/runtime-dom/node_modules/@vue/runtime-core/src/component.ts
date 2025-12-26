@@ -45,7 +45,7 @@ function applyOptions(instance: any) {
   } = instance.type;
   // hooks
   if (beforeCreate) {
-    callHook(beforeCreate);
+    callHook(beforeCreate, instance.data);
   }
 
   // 存在 data 选项时
@@ -61,17 +61,17 @@ function applyOptions(instance: any) {
 
   // hooks
   if (created) {
-    callHook(created);
+    callHook(created, instance.data);
   }
   function registerLifecycleHook(register: Function, hook?: Function) {
-    register(hook, instance);
+    register(hook?.bind(instance.data), instance);
   }
   registerLifecycleHook(onBeforeMount, beforeMount);
   registerLifecycleHook(onMounted, mounted);
 }
 
-function callHook(hook: Function) {
-  hook();
+function callHook(hook: Function, proxy) {
+  hook.bind(proxy)();
 }
 
 /**
