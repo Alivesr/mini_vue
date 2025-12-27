@@ -8,8 +8,14 @@
   <body>
     <div id="app"></div>
     <script type="module">
-      import { h, render, Fragment, Text, Comment } from "./runtime-dom.esm.js";
-      import { reactive } from "../../reactivity/dist/reactivity.esm.js";
+      import {
+        h,
+        render,
+        Fragment,
+        Text,
+        Comment,
+        reactive,
+      } from "./runtime-dom.esm.js";
       const component = {
         setup() {
           const obj = reactive({

@@ -43,20 +43,47 @@ const entry = resolve(__dirname, `../packages/${target}/src/index.ts`);
 
 const pkg = require(resolve(__dirname, `../packages/${target}/package.json`));
 
-esbuild
-  .context({
-    entryPoints: [entry], // 入口文件
-    outfile: resolve(
-      __dirname,
-      `../packages/${target}/dist/${target}.${format}.js`
-    ), // 输出文件
-    bundle: true, // 打包 将所有依赖打包成一个文件
-    platform: "browser", // 平台 浏览器
-    sourcemap: true, // 源码映射 生成sourcemap文件
-    format, // 格式 输出格式 cjs esm iife
-    globalName: pkg.buildOptions.name, // 全局变量名
-  })
-  .then((ctx) => {
+const buildOptions = {
+  entryPoints: [entry], // 入口文件
+  outfile: resolve(
+    __dirname,
+    `../packages/${target}/dist/${target}.${format}.js`
+  ), // 输出文件
+  bundle: true, // 打包 将所有依赖打包成一个文件
+  // 默认不 externalize，当构建特定包（如 reactivity/shared）时才保留其依赖。
+  // 对于 runtime-dom，我们希望把 reactivity/shared 一并打包进去（不 external）。
+  external: [
+    // externalize @vue/reactivity 仅当构建的是 reactivity 本身
+    ...(target === "reactivity"
+      ? []
+      : target === "runtime-dom"
+      ? []
+      : ["@vue/reactivity"]),
+    // externalize @vue/shared 仅当构建的是 shared 本身
+    ...(target === "shared"
+      ? []
+      : target === "runtime-dom"
+      ? []
+      : ["@vue/shared"]),
+  ],
+  platform: "browser",
+  sourcemap: true,
+  format,
+  globalName: pkg.buildOptions.name,
+};
+
+if (args.once || args._.includes("once")) {
+  // 一次性构建（便于捕获并显示错误），不启用 watch
+  esbuild
+    .build(buildOptions)
+    .then(() => console.log("build finished"))
+    .catch((err) => {
+      console.error(err);
+      process.exit(1);
+    });
+} else {
+  esbuild.context(buildOptions).then((ctx) => {
     console.log("start build");
     ctx.watch(); // 监听文件变化
   });
+}

@@ -6,6 +6,7 @@ import { normalizeVNode } from "./componentRenderUtils";
 import { createComponentInstance, setupComponent } from "./component";
 import { ReactiveEffect } from "@vue/reactivity";
 import { renderComponentRoot } from "./componentRenderUtils";
+import { queuePreFlushCb } from "./scheduler";
 export function createRenderer(rendererOptions) {
   //core 不关心如何渲染
 
@@ -247,7 +248,7 @@ export function createRenderer(rendererOptions) {
     // 创建包含 scheduler 的 effect 实例
     const effect = (instance.effect = new ReactiveEffect(
       componentUpdateFn,
-      () => update
+      () => queuePreFlushCb(update)
     ));
 
     // 生成 update 函数

@@ -21,4 +21,9 @@ export { patchProp, rendererOptions };
 
 export * from "@vue/runtime-core";
 
-// runtime-dom -> runtime-core -> reactivity
+// 为了让页面可以直接从 runtime-dom 导入 reactive/shared，
+// 重新导出这两个包的接口，保证运行时只加载一份实现。
+export * from "@vue/reactivity";
+export * from "@vue/shared";
+// explicitly export isObject from @vue/reactivity to resolve naming conflict
+export { isObject } from "@vue/reactivity";

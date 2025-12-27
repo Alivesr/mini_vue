@@ -279,12 +279,8 @@ function proxyRefs(objectWithRefs) {
   });
 }
 
-// packages/shared/src/index.ts
-function isFunction(val) {
-  return typeof val === "function";
-}
-
 // packages/reactivity/src/computed.ts
+import { isFunction } from "@vue/shared";
 var ComputedRefImpl = class {
   constructor(getter, setter) {
     this.setter = setter;

@@ -48,6 +48,22 @@ function patchClass(el, value) {
   }
 }
 
+// packages/shared/src/shapeFlags.ts
+var ShapeFlags = /* @__PURE__ */ ((ShapeFlags2) => {
+  ShapeFlags2[ShapeFlags2["ELEMENT"] = 1] = "ELEMENT";
+  ShapeFlags2[ShapeFlags2["FUNCTIONAL_COMPONENT"] = 2] = "FUNCTIONAL_COMPONENT";
+  ShapeFlags2[ShapeFlags2["STATEFUL_COMPONENT"] = 4] = "STATEFUL_COMPONENT";
+  ShapeFlags2[ShapeFlags2["TEXT_CHILDREN"] = 8] = "TEXT_CHILDREN";
+  ShapeFlags2[ShapeFlags2["ARRAY_CHILDREN"] = 16] = "ARRAY_CHILDREN";
+  ShapeFlags2[ShapeFlags2["SLOTS_CHILDREN"] = 32] = "SLOTS_CHILDREN";
+  ShapeFlags2[ShapeFlags2["TELEPORT"] = 64] = "TELEPORT";
+  ShapeFlags2[ShapeFlags2["SUSPENSE"] = 128] = "SUSPENSE";
+  ShapeFlags2[ShapeFlags2["COMPONENT_SHOULD_KEEP_ALIVE"] = 256] = "COMPONENT_SHOULD_KEEP_ALIVE";
+  ShapeFlags2[ShapeFlags2["COMPONENT_KEPT_ALIVE"] = 512] = "COMPONENT_KEPT_ALIVE";
+  ShapeFlags2[ShapeFlags2["COMPONENT"] = 6] = "COMPONENT";
+  return ShapeFlags2;
+})(ShapeFlags || {});
+
 // packages/shared/src/normalizeProp.ts
 function normalizeClass(value) {
   let res = "";
@@ -174,16 +190,28 @@ function patchDOMProp(el, key, value) {
 }
 
 // packages/reactivity/src/effect.ts
-var activeEffect;
-function preCleanEffect(effect2) {
-  effect2._depsLength = 0;
-  effect2._trackId++;
-}
-function postCleanEffect(effect2) {
-  for (let i = effect2._depsLength; i < effect2.deps.length; i++) {
-    cleanDepEffect(effect2.deps[i], effect2);
+function effect(fn, options) {
+  const _effect = new ReactiveEffect(fn, () => {
+    _effect.run();
+  });
+  _effect.run();
+  if (options) {
+    Object.assign(_effect, options);
   }
-  effect2.deps.length = effect2._depsLength;
+  const runner = _effect.run.bind(_effect);
+  runner.effect = _effect;
+  return runner;
+}
+var activeEffect;
+function preCleanEffect(effect3) {
+  effect3._depsLength = 0;
+  effect3._trackId++;
+}
+function postCleanEffect(effect3) {
+  for (let i = effect3._depsLength; i < effect3.deps.length; i++) {
+    cleanDepEffect(effect3.deps[i], effect3);
+  }
+  effect3.deps.length = effect3._depsLength;
 }
 var ReactiveEffect = class {
   //fn 用户传入的函数
@@ -235,34 +263,34 @@ var ReactiveEffect = class {
     }
   }
 };
-function cleanDepEffect(dep, effect2) {
-  dep.delete(effect2);
+function cleanDepEffect(dep, effect3) {
+  dep.delete(effect3);
   if (dep.size == 0) {
     dep.cleanup();
   }
 }
-function trackEffect(effect2, dep) {
-  if (dep.get(effect2) !== effect2._trackId) {
-    dep.set(effect2, effect2._trackId);
-    let oldDeps = effect2.deps[effect2._depsLength];
+function trackEffect(effect3, dep) {
+  if (dep.get(effect3) !== effect3._trackId) {
+    dep.set(effect3, effect3._trackId);
+    let oldDeps = effect3.deps[effect3._depsLength];
     if (oldDeps !== dep) {
       if (oldDeps) {
-        cleanDepEffect(oldDeps, effect2);
+        cleanDepEffect(oldDeps, effect3);
       }
-      effect2.deps[effect2._depsLength++] = dep;
+      effect3.deps[effect3._depsLength++] = dep;
     } else {
-      effect2._depsLength++;
+      effect3._depsLength++;
     }
   }
 }
 function triggerEffects(dep) {
-  for (const effect2 of dep.keys()) {
-    if (effect2._dirtyLevel < 4 /* Dirty */) {
-      effect2._dirtyLevel = 4 /* Dirty */;
+  for (const effect3 of dep.keys()) {
+    if (effect3._dirtyLevel < 4 /* Dirty */) {
+      effect3._dirtyLevel = 4 /* Dirty */;
     }
-    if (effect2.scheduler) {
-      if (effect2._running == 0) {
-        effect2.scheduler();
+    if (effect3.scheduler) {
+      if (effect3._running == 0) {
+        effect3.scheduler();
       }
     }
   }
@@ -330,6 +358,9 @@ var mutableHandlers = {
 };
 
 // packages/reactivity/src/reactive.ts
+function isReactive(value) {
+  return !!(value && value["__v_isReactive" /* IS_REACTIVE */]);
+}
 function isObject2(val) {
   return typeof val === "object" && val !== null;
 }
@@ -350,6 +381,197 @@ function createReactiveObject(target) {
 }
 function reactive(target) {
   return createReactiveObject(target);
+}
+function toReactive(value) {
+  return isObject2(value) ? reactive(value) : value;
+}
+
+// packages/reactivity/src/ref.ts
+function isRef(r) {
+  return !!(r && r.__v_isRef === true);
+}
+function ref(value) {
+  return createRef(value);
+}
+function createRef(value) {
+  return new RefImpl(value);
+}
+var RefImpl = class {
+  // 用于收集对应的effect
+  constructor(rawValue) {
+    this.rawValue = rawValue;
+    this.__v_isRef = true;
+    this._value = toReactive(rawValue);
+  }
+  get value() {
+    trackRefValue(this);
+    return this._value;
+  }
+  set value(newValue) {
+    if (newValue !== this.rawValue) {
+      this.rawValue = newValue;
+      this._value = newValue;
+      triggerRefValue(this);
+    }
+  }
+};
+function trackRefValue(ref2) {
+  if (activeEffect) {
+    trackEffect(
+      activeEffect,
+      ref2.dep = ref2.dep || createDep(() => ref2.dep = void 0, "undefined")
+    );
+  }
+}
+function triggerRefValue(ref2) {
+  let dep = ref2.dep;
+  if (dep) {
+    triggerEffects(dep);
+  }
+}
+var ObjectRefImpl = class {
+  constructor(_object, _key) {
+    this._object = _object;
+    this._key = _key;
+    this.__v_isRef = true;
+  }
+  get value() {
+    return this._object[this._key];
+  }
+  set value(newValue) {
+    this._object[this._key] = newValue;
+  }
+};
+function toRef(object, key) {
+  return new ObjectRefImpl(object, key);
+}
+function toRefs(object) {
+  let res = {};
+  for (let key in object) {
+    res[key] = toRef(object, key);
+  }
+  return res;
+}
+function proxyRefs(objectWithRefs) {
+  return new Proxy(objectWithRefs, {
+    get(target, key, receiver) {
+      let v = Reflect.get(target, key, receiver);
+      return v.__v_isRef ? v.value : v;
+    },
+    set(target, key, value, receiver) {
+      const oldValue = target[key];
+      if (oldValue.__v_isRef) {
+        oldValue.value = value;
+        return true;
+      } else {
+        return Reflect.set(target, key, value, receiver);
+      }
+    }
+  });
+}
+
+// packages/reactivity/src/computed.ts
+var ComputedRefImpl = class {
+  constructor(getter, setter) {
+    this.setter = setter;
+    this.effect = new ReactiveEffect(
+      () => getter(this._value),
+      // 计算属性依赖的值会对计算属性effect进行收集
+      () => triggerRefValue(this)
+      // 计算属性依赖的值变化后会触发此函数 通知effect重新执行
+    );
+  }
+  get value() {
+    if (this.effect.dirty) {
+      this._value = this.effect.run();
+      trackRefValue(this);
+    } else {
+      return this._value;
+    }
+    return this.effect.run();
+  }
+  set value(v) {
+    this.setter(v);
+  }
+};
+function computed(getterOrOptions) {
+  let onlyGetter = isFunction(getterOrOptions);
+  let getter;
+  let setter;
+  if (onlyGetter) {
+    getter = getterOrOptions;
+    setter = () => {
+    };
+  } else {
+    getter = getterOrOptions.get;
+    setter = getterOrOptions.set;
+  }
+  return new ComputedRefImpl(getter, setter);
+}
+
+// packages/reactivity/src/apiWatch.ts
+function watch(source, callback, options = {}) {
+  return doWatch(source, callback, options);
+}
+function traverse(source, depth, currentDepth = 0, seen = /* @__PURE__ */ new Set()) {
+  if (typeof source !== "object" || source === null) {
+    return source;
+  }
+  if (seen.has(source)) {
+    return source;
+  }
+  seen.add(source);
+  if (depth !== void 0 && currentDepth >= depth) {
+    return source;
+  }
+  if (isReactive(source) || isRef(source)) {
+    for (let key in source) {
+      traverse(source[key], depth, currentDepth + 1, seen);
+    }
+  }
+  return source;
+}
+function doWatch(source, callback, { deep = false, immediate = false } = {}) {
+  let getter;
+  if (typeof source === "function") {
+    getter = source;
+  } else if (isReactive(source)) {
+    getter = () => traverse(source, deep ? void 0 : 1);
+  } else if (isRef(source)) {
+    getter = () => source.value;
+  } else {
+    getter = () => source;
+  }
+  let oldValue;
+  let clean;
+  const onCleanup = (fn) => {
+    clean = () => {
+      fn();
+      clean = void 0;
+    };
+  };
+  const job = () => {
+    const newValue = effect3.run();
+    if (clean) {
+      clean();
+    }
+    if (callback) {
+      callback(newValue, oldValue, onCleanup);
+      oldValue = newValue;
+    }
+  };
+  const effect3 = new ReactiveEffect(getter, job);
+  if (immediate) {
+    job();
+  }
+  oldValue = effect3.run();
+  const unwatch = () => {
+    effect3.stop();
+  };
+  return unwatch;
+}
+function watchEffect(source, options) {
+  return doWatch(source, null, options);
 }
 
 // packages/runtime-core/src/createVnode.ts
@@ -550,6 +772,38 @@ function finishComponentSetup(instance) {
   applyOptions(instance);
 }
 
+// packages/runtime-core/src/scheduler.ts
+var isFlushPending = false;
+var resolvedPromise = Promise.resolve();
+var currentFlushPromise = null;
+var pendingPreFlushCbs = [];
+function queuePreFlushCb(cb) {
+  queueCb(cb, pendingPreFlushCbs);
+}
+function queueCb(cb, pendingQueue) {
+  pendingQueue.push(cb);
+  queueFlush();
+}
+function queueFlush() {
+  if (!isFlushPending) {
+    isFlushPending = true;
+    currentFlushPromise = resolvedPromise.then(flushJobs);
+  }
+}
+function flushJobs() {
+  isFlushPending = false;
+  flushPreFlushCbs();
+}
+function flushPreFlushCbs() {
+  if (pendingPreFlushCbs.length) {
+    let activePreFlushCbs = [...new Set(pendingPreFlushCbs)];
+    pendingPreFlushCbs.length = 0;
+    for (let i = 0; i < activePreFlushCbs.length; i++) {
+      activePreFlushCbs[i]();
+    }
+  }
+}
+
 // packages/runtime-core/src/render.ts
 function createRenderer(rendererOptions2) {
   const {
@@ -685,11 +939,11 @@ function createRenderer(rendererOptions2) {
         next.el = nextTree.el;
       }
     };
-    const effect2 = instance.effect = new ReactiveEffect(
+    const effect3 = instance.effect = new ReactiveEffect(
       componentUpdateFn,
-      () => update
+      () => queuePreFlushCb(update)
     );
-    const update = instance.update = () => effect2.run();
+    const update = instance.update = () => effect3.run();
     update();
   };
   const unmount = (vnode) => {
@@ -773,17 +1027,43 @@ var render = (...args) => {
 };
 export {
   Comment,
+  EMPTY_OBJ,
   Fragment,
+  ReactiveEffect,
+  ShapeFlags,
   Text,
+  activeEffect,
+  cleanDepEffect,
+  computed,
   createRenderer,
   createVNode,
+  effect,
   h,
+  isArray,
+  isFunction,
+  isObject2 as isObject,
+  isReactive,
+  isRef,
   isSameVNodeType,
+  isString,
   isVNode,
   isVnode,
   normalizeChildren,
+  normalizeClass,
   patchProp,
+  proxyRefs,
+  reactive,
+  ref,
   render,
-  rendererOptions
+  rendererOptions,
+  toReactive,
+  toRef,
+  toRefs,
+  trackEffect,
+  trackRefValue,
+  triggerEffects,
+  triggerRefValue,
+  watch,
+  watchEffect
 };
 //# sourceMappingURL=runtime-dom.esm.js.map
