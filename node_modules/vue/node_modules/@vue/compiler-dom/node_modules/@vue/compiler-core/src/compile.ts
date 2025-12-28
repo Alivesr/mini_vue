@@ -1,4 +1,4 @@
-import { baseParse } from "packages/compiler-core/src/parse";
+import { baseParse } from "@vue/compiler-core";
 
 export function baseCompile(template: string, options) {
   const ast = baseParse(template);
