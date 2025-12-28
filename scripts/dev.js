@@ -65,6 +65,24 @@ const externalConfig = {
   ],
 };
 
+// esbuild 插件：自动解析 @vue/* 包到源文件
+const vueAliasPlugin = {
+  name: "vue-alias",
+  setup(build) {
+    const needsAlias =
+      build.initialOptions.format === "iife" ||
+      (build.initialOptions.format === "esm" && format === "esm-browser");
+    if (!needsAlias) return;
+
+    build.onResolve({ filter: /^@vue\// }, (args) => {
+      const pkgName = args.path.split("/")[1]; // 例如从 "@vue/shared" 提取 "shared"
+      return {
+        path: resolve(__dirname, `../packages/${pkgName}/src/index.ts`),
+      };
+    });
+  },
+};
+
 const buildOptions = {
   entryPoints: [entry], // 入口文件
   outfile: resolve(
@@ -72,11 +90,16 @@ const buildOptions = {
     `../packages/${target}/dist/${target}.${format}.js`
   ), // 输出文件
   bundle: true, // 打包 将所有依赖打包成一个文件
-  external: externalConfig[target] || [], // 使用配置的 external 列表
+  external:
+    format === "iife" || format === "esm-browser"
+      ? []
+      : externalConfig[target] || [], // global 和 esm-browser 格式不使用 external
   platform: "browser",
   sourcemap: true,
-  format,
+  format:
+    format === "global" ? "iife" : format === "esm-browser" ? "esm" : format, // global 转为 iife, esm-browser 转为 esm
   globalName: pkg.buildOptions?.name,
+  plugins: [vueAliasPlugin],
 };
 
 if (args.once || args._.includes("once")) {
