@@ -38,6 +38,20 @@
           },
           "c"
         ),
+        h(
+          "li",
+          {
+            key: 4,
+          },
+          "d"
+        ),
+        h(
+          "li",
+          {
+            key: 5,
+          },
+          "e"
+        ),
       ]);
       // 挂载
       render(vnode, document.querySelector("#app"));
@@ -48,23 +62,37 @@
           h(
             "li",
             {
-              key: 4,
+              key: 1,
             },
-            "a"
-          ),
-          h(
-            "li",
-            {
-              key: 2,
-            },
-            "b"
+            "new-a"
           ),
           h(
             "li",
             {
               key: 3,
             },
-            "d"
+            "new-c"
+          ),
+          h(
+            "li",
+            {
+              key: 2,
+            },
+            "new-b"
+          ),
+          h(
+            "li",
+            {
+              key: 6,
+            },
+            "new-f"
+          ),
+          h(
+            "li",
+            {
+              key: 5,
+            },
+            "new-e"
           ),
         ]);
         render(vnode2, document.querySelector("#app"));

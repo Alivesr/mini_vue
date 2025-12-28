@@ -7,6 +7,7 @@ import { createComponentInstance, setupComponent } from "./component";
 import { ReactiveEffect } from "@vue/reactivity";
 import { renderComponentRoot } from "./componentRenderUtils";
 import { queuePreFlushCb } from "./scheduler";
+import { getSequence } from "./getSequence";
 export function createRenderer(rendererOptions) {
   //core 不关心如何渲染
 
@@ -236,6 +237,100 @@ export function createRenderer(rendererOptions) {
       oldChildrenEnd--;
       newChildrenEnd--;
     }
+
+    // 3. 新节点多余旧节点时的 diff 比对。
+    if (i > oldChildrenEnd) {
+      if (i <= newChildrenEnd) {
+        const nextPos = newChildrenEnd + 1;
+        const anchor =
+          nextPos < newChildrenLength ? newChildren[nextPos].el : parentAnchor;
+
+        //parentAnchor通常 为 null 然后就是插入到 container 的末尾
+        while (i <= newChildrenEnd) {
+          patch(null, normalizeVNode(newChildren[i]), container, anchor);
+          i++;
+        }
+      }
+    } // 4. 旧节点多与新节点时的 diff 比对。
+    else if (i > newChildrenEnd) {
+      while (i <= oldChildrenEnd) {
+        unmount(oldChildren[i]);
+        i++;
+      }
+    } // 5. 乱序的 diff 比对
+    else {
+      const oldStartIndex = i;
+      const newStartIndex = i;
+      const keyToNewIndexMap = new Map();
+      for (i = newStartIndex; i <= newChildrenEnd; i++) {
+        const nextChild = normalizeVNode(newChildren[i]);
+        if (nextChild.key != null) {
+          keyToNewIndexMap.set(nextChild.key, i);
+        }
+      }
+
+      let j;
+      let patched = 0;
+      const toBePatched = newChildrenEnd - newStartIndex + 1;
+      let moved = false;
+      let maxNewIndexSoFar = 0;
+      const newIndexToOldIndexMap = new Array(toBePatched);
+      for (i = 0; i < toBePatched; i++) newIndexToOldIndexMap[i] = 0;
+      for (i = oldStartIndex; i <= oldChildrenEnd; i++) {
+        const prevChild = oldChildren[i];
+        if (patched >= toBePatched) {
+          unmount(prevChild);
+          continue;
+        }
+        let newIndex;
+        if (prevChild.key != null) {
+          newIndex = keyToNewIndexMap.get(prevChild.key);
+        }
+
+        if (newIndex === undefined) {
+          unmount(prevChild);
+        } else {
+          newIndexToOldIndexMap[newIndex - newStartIndex] = i + 1;
+          if (newIndex >= maxNewIndexSoFar) {
+            maxNewIndexSoFar = newIndex;
+          } else {
+            moved = true;
+          }
+          patch(prevChild, newChildren[newIndex], container, null);
+          patched++;
+        }
+      }
+
+      const increasingNewIndexSequence = moved
+        ? getSequence(newIndexToOldIndexMap)
+        : [];
+      j = increasingNewIndexSequence.length - 1;
+      for (i = toBePatched - 1; i >= 0; i--) {
+        const nextIndex = newStartIndex + i;
+        const nextChild = newChildren[nextIndex];
+        const anchor =
+          nextIndex + 1 < newChildrenLength
+            ? newChildren[nextIndex + 1].el
+            : parentAnchor;
+        if (newIndexToOldIndexMap[i] === 0) {
+          patch(null, nextChild, container, anchor);
+        } else if (moved) {
+          if (j < 0 || i !== increasingNewIndexSequence[j]) {
+            move(nextChild, container, anchor);
+          } else {
+            j--;
+          }
+        }
+      }
+    }
+  };
+
+  /**
+   * 移动节点到指定位置
+   */
+  const move = (vnode, container, anchor) => {
+    const { el } = vnode;
+    hostInsert(el!, container, anchor);
   };
 
   const mountComponent = (initialVNode, container, anchor) => {

@@ -805,6 +805,48 @@ function flushPreFlushCbs() {
   }
 }
 
+// packages/runtime-core/src/getSequence.ts
+function getSequence(arr) {
+  const p = arr.slice();
+  const result = [0];
+  let i, j, u, v, c;
+  const len = arr.length;
+  for (i = 0; i < len; i++) {
+    const arrI = arr[i];
+    if (arrI !== 0) {
+      j = result[result.length - 1];
+      if (arr[j] < arrI) {
+        p[i] = j;
+        result.push(i);
+        continue;
+      }
+      u = 0;
+      v = result.length - 1;
+      while (u < v) {
+        c = u + v >> 1;
+        if (arr[result[c]] < arrI) {
+          u = c + 1;
+        } else {
+          v = c;
+        }
+      }
+      if (arrI < arr[result[u]]) {
+        if (u > 0) {
+          p[i] = result[u - 1];
+        }
+        result[u] = i;
+      }
+    }
+  }
+  u = result.length;
+  v = result[u - 1];
+  while (u-- > 0) {
+    result[u] = v;
+    v = p[v];
+  }
+  return result;
+}
+
 // packages/runtime-core/src/render.ts
 function createRenderer(rendererOptions2) {
   const {
@@ -935,6 +977,81 @@ function createRenderer(rendererOptions2) {
       oldChildrenEnd--;
       newChildrenEnd--;
     }
+    if (i > oldChildrenEnd) {
+      if (i <= newChildrenEnd) {
+        const nextPos = newChildrenEnd + 1;
+        const anchor = nextPos < newChildrenLength ? newChildren[nextPos].el : parentAnchor;
+        while (i <= newChildrenEnd) {
+          patch(null, normalizeVNode(newChildren[i]), container, anchor);
+          i++;
+        }
+      }
+    } else if (i > newChildrenEnd) {
+      while (i <= oldChildrenEnd) {
+        unmount(oldChildren[i]);
+        i++;
+      }
+    } else {
+      const oldStartIndex = i;
+      const newStartIndex = i;
+      const keyToNewIndexMap = /* @__PURE__ */ new Map();
+      for (i = newStartIndex; i <= newChildrenEnd; i++) {
+        const nextChild = normalizeVNode(newChildren[i]);
+        if (nextChild.key != null) {
+          keyToNewIndexMap.set(nextChild.key, i);
+        }
+      }
+      let j;
+      let patched = 0;
+      const toBePatched = newChildrenEnd - newStartIndex + 1;
+      let moved = false;
+      let maxNewIndexSoFar = 0;
+      const newIndexToOldIndexMap = new Array(toBePatched);
+      for (i = 0; i < toBePatched; i++) newIndexToOldIndexMap[i] = 0;
+      for (i = oldStartIndex; i <= oldChildrenEnd; i++) {
+        const prevChild = oldChildren[i];
+        if (patched >= toBePatched) {
+          unmount(prevChild);
+          continue;
+        }
+        let newIndex;
+        if (prevChild.key != null) {
+          newIndex = keyToNewIndexMap.get(prevChild.key);
+        }
+        if (newIndex === void 0) {
+          unmount(prevChild);
+        } else {
+          newIndexToOldIndexMap[newIndex - newStartIndex] = i + 1;
+          if (newIndex >= maxNewIndexSoFar) {
+            maxNewIndexSoFar = newIndex;
+          } else {
+            moved = true;
+          }
+          patch(prevChild, newChildren[newIndex], container, null);
+          patched++;
+        }
+      }
+      const increasingNewIndexSequence = moved ? getSequence(newIndexToOldIndexMap) : [];
+      j = increasingNewIndexSequence.length - 1;
+      for (i = toBePatched - 1; i >= 0; i--) {
+        const nextIndex = newStartIndex + i;
+        const nextChild = newChildren[nextIndex];
+        const anchor = nextIndex + 1 < newChildrenLength ? newChildren[nextIndex + 1].el : parentAnchor;
+        if (newIndexToOldIndexMap[i] === 0) {
+          patch(null, nextChild, container, anchor);
+        } else if (moved) {
+          if (j < 0 || i !== increasingNewIndexSequence[j]) {
+            move(nextChild, container, anchor);
+          } else {
+            j--;
+          }
+        }
+      }
+    }
+  };
+  const move = (vnode, container, anchor) => {
+    const { el } = vnode;
+    hostInsert(el, container, anchor);
   };
   const mountComponent = (initialVNode, container, anchor) => {
     initialVNode.component = createComponentInstance(initialVNode);
