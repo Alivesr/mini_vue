@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../src/index.ts"],
+  "sourcesContent": ["export * from \"@vue/reactivity\";\r\nexport * from \"@vue/runtime-core\";\r\n\r\nexport * from \"@vue/runtime-dom\";\r\n\r\nexport { compile } from \"@vue/compiler-dom\";\r\n// export * from \"@vue/vue-compat\";\r\n\r\nexport * from \"@vue/shared\";\r\n"],
+  "mappings": ";AAAA,cAAc;AACd,cAAc;AAEd,cAAc;AAEd,SAAS,eAAe;AAGxB,cAAc;",
+  "names": []
+}

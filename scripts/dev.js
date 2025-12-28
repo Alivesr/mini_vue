@@ -43,6 +43,28 @@ const entry = resolve(__dirname, `../packages/${target}/src/index.ts`);
 
 const pkg = require(resolve(__dirname, `../packages/${target}/package.json`));
 
+// 依赖关系配置：定义哪些包需要 external 哪些依赖
+// 对于底层包（shared），不 external 任何东西
+// 对于中间层包（reactivity, compiler-core），只 external shared
+// 对于上层包（runtime-core, runtime-dom），external shared 和 reactivity
+// 对于最终包（vue），external 所有内部依赖
+const externalConfig = {
+  shared: [], // 最底层，无依赖
+  reactivity: ["@vue/shared"],
+  "compiler-core": ["@vue/shared"],
+  "compiler-dom": ["@vue/shared", "@vue/compiler-core"],
+  "runtime-core": ["@vue/shared", "@vue/reactivity"],
+  "runtime-dom": ["@vue/shared", "@vue/reactivity", "@vue/runtime-core"],
+  vue: [
+    "@vue/shared",
+    "@vue/reactivity",
+    "@vue/compiler-core",
+    "@vue/compiler-dom",
+    "@vue/runtime-core",
+    "@vue/runtime-dom",
+  ],
+};
+
 const buildOptions = {
   entryPoints: [entry], // 入口文件
   outfile: resolve(
@@ -50,26 +72,11 @@ const buildOptions = {
     `../packages/${target}/dist/${target}.${format}.js`
   ), // 输出文件
   bundle: true, // 打包 将所有依赖打包成一个文件
-  // 默认不 externalize，当构建特定包（如 reactivity/shared）时才保留其依赖。
-  // 对于 runtime-dom，我们希望把 reactivity/shared 一并打包进去（不 external）。
-  external: [
-    // externalize @vue/reactivity 仅当构建的是 reactivity 本身
-    ...(target === "reactivity"
-      ? []
-      : target === "runtime-dom"
-      ? []
-      : ["@vue/reactivity"]),
-    // externalize @vue/shared 仅当构建的是 shared 本身
-    ...(target === "shared"
-      ? []
-      : target === "runtime-dom"
-      ? []
-      : ["@vue/shared"]),
-  ],
+  external: externalConfig[target] || [], // 使用配置的 external 列表
   platform: "browser",
   sourcemap: true,
   format,
-  globalName: pkg.buildOptions.name,
+  globalName: pkg.buildOptions?.name,
 };
 
 if (args.once || args._.includes("once")) {

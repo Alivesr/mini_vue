@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="app">
+      <p id="name"></p>
+      <p id="age"></p>
+    </div>
+    <script type="module">
+      import { reactive, effect } from "./reactivity.esm.js";
+      const origin = {
+        name: "John",
+        age: 18,
+        address :{
+          n:1
+        }
+      };
+      const state = reactive(origin);
+
+      const app = document.getElementById("app");
+      const name = document.getElementById("name");
+      const age = document.getElementById("age");
+
+      effect(()=>{
+        app.innerHTML = state.address.n
+
+      })
+
+      setTimeout(() => {
+        state.address.n = 2
+      }, 1000);
+    </script>
+  </body>
+</html>

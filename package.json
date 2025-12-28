@@ -5,7 +5,22 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "dev": "node scripts/dev.js runtime-dom -f esm"
+    "dev": "node scripts/dev.js runtime-dom -f esm",
+    "dev:compiler": "node scripts/dev.js compiler-core -f esm",
+    "dev:compiler-dom": "node scripts/dev.js compiler-dom -f esm",
+    "dev:reactivity": "node scripts/dev.js reactivity -f esm",
+    "dev:runtime-core": "node scripts/dev.js runtime-core -f esm",
+    "dev:shared": "node scripts/dev.js shared -f esm",
+    "dev:vue": "node scripts/dev.js vue -f esm",
+    "build": "node scripts/dev.js",
+    "build:all": "pnpm run build:shared && pnpm run build:reactivity && pnpm run build:compiler && pnpm run build:compiler-dom && pnpm run build:runtime-core && pnpm run build:runtime-dom && pnpm run build:vue",
+    "build:shared": "node scripts/dev.js shared -f esm --once",
+    "build:reactivity": "node scripts/dev.js reactivity -f esm --once",
+    "build:compiler": "node scripts/dev.js compiler-core -f esm --once",
+    "build:compiler-dom": "node scripts/dev.js compiler-dom -f esm --once",
+    "build:runtime-core": "node scripts/dev.js runtime-core -f esm --once",
+    "build:runtime-dom": "node scripts/dev.js runtime-dom -f esm --once",
+    "build:vue": "node scripts/dev.js vue -f esm --once"
   },
   "keywords": [],
   "author": "",
@@ -15,9 +30,5 @@
     "esbuild": "^0.27.1",
     "minimist": "^1.2.8",
     "typescript": "^5.9.3"
-  },
-  "dependencies": {
-    "@vue/runtime-core": "^3.5.26",
-    "vue": "^3.5.26"
   }
 }
