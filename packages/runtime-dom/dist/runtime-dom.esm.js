@@ -600,7 +600,8 @@ function createBaseVNode(type, props, children, shapeFlag) {
     //标识
     type,
     props,
-    shapeFlag
+    shapeFlag,
+    key: props?.key || null
   };
   normalizeChildren(vnode, children);
   return vnode;
@@ -864,6 +865,7 @@ function createRenderer(rendererOptions2) {
     } else {
       if (prevShapeFlag & 16 /* ARRAY_CHILDREN */) {
         if (shapeFlag & 16 /* ARRAY_CHILDREN */) {
+          patchKeyedChildren(c1, c2, container, anchor);
         } else {
         }
       } else {
@@ -905,6 +907,33 @@ function createRenderer(rendererOptions2) {
     if (oldVNode == null) {
       mountComponent(newVNode, container, anchor);
       console.log("\u6302\u8F7D\u7EC4\u4EF6", newVNode);
+    }
+  };
+  const patchKeyedChildren = (oldChildren, newChildren, container, parentAnchor) => {
+    let i = 0;
+    const newChildrenLength = newChildren.length;
+    let oldChildrenEnd = oldChildren.length - 1;
+    let newChildrenEnd = newChildrenLength - 1;
+    while (i <= oldChildrenEnd && i <= newChildrenEnd) {
+      const oldVNode = oldChildren[i];
+      const newVNode = normalizeVNode(newChildren[i]);
+      if (isSameVNodeType(oldVNode, newVNode)) {
+        patch(oldVNode, newVNode, container, null);
+      } else {
+        break;
+      }
+      i++;
+    }
+    while (i <= oldChildrenEnd && i <= newChildrenEnd) {
+      const oldVNode = oldChildren[oldChildrenEnd];
+      const newVNode = normalizeVNode(newChildren[newChildrenEnd]);
+      if (isSameVNodeType(oldVNode, newVNode)) {
+        patch(oldVNode, newVNode, container, null);
+      } else {
+        break;
+      }
+      oldChildrenEnd--;
+      newChildrenEnd--;
     }
   };
   const mountComponent = (initialVNode, container, anchor) => {
@@ -970,7 +999,7 @@ function createRenderer(rendererOptions2) {
     if (shapeFlag & 8 /* TEXT_CHILDREN */) {
       hostSetElementText(el, children);
     } else if (shapeFlag & 16 /* ARRAY_CHILDREN */) {
-      mountChildren(children, el);
+      mountChildren(children, el, anchor);
     }
     hostInsert(el, container);
   };

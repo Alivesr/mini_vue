@@ -106,6 +106,7 @@ export function createRenderer(rendererOptions) {
         // 新子节点也为 ARRAY_CHILDREN
         if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
           // TODO: 这里要进行 diff 运算
+          patchKeyedChildren(c1, c2, container, anchor);
         }
         // 新子节点不为 ARRAY_CHILDREN，则直接卸载旧子节点
         else {
@@ -177,6 +178,63 @@ export function createRenderer(rendererOptions) {
 
       mountComponent(newVNode, container, anchor);
       console.log("挂载组件", newVNode);
+    }
+  };
+
+  //`patchKeyedChildren`
+
+  const patchKeyedChildren = (
+    oldChildren,
+    newChildren,
+    container,
+    parentAnchor
+  ) => {
+    /**
+     * 索引
+     */
+    let i = 0;
+    /**
+     * 新的子节点的长度
+     */
+    const newChildrenLength = newChildren.length;
+    /**
+     * 旧的子节点最大（最后一个）下标
+     */
+    let oldChildrenEnd = oldChildren.length - 1;
+    /**
+     * 新的子节点最大（最后一个）下标
+     */
+    let newChildrenEnd = newChildrenLength - 1;
+
+    // 1. 自前向后的 diff 对比。经过该循环之后，从前开始的相同 vnode 将被处理
+    while (i <= oldChildrenEnd && i <= newChildrenEnd) {
+      const oldVNode = oldChildren[i];
+      // 获取新的 vnode
+      //通过 normalizeVNode 标准化 将其他格式转化成 VNode
+      const newVNode = normalizeVNode(newChildren[i]);
+      // 如果 oldVNode 和 newVNode 被认为是同一个 vnode，则直接 patch 即可
+      if (isSameVNodeType(oldVNode, newVNode)) {
+        patch(oldVNode, newVNode, container, null);
+      }
+      // 如果不被认为是同一个 vnode，则直接跳出循环
+      else {
+        break;
+      }
+      // 下标自增
+      i++;
+    }
+
+    // 2. 自后向前的 diff 对比。经过该循环之后，从后开始的相同 vnode 将被处理
+    while (i <= oldChildrenEnd && i <= newChildrenEnd) {
+      const oldVNode = oldChildren[oldChildrenEnd];
+      const newVNode = normalizeVNode(newChildren[newChildrenEnd]);
+      if (isSameVNodeType(oldVNode, newVNode)) {
+        patch(oldVNode, newVNode, container, null);
+      } else {
+        break;
+      }
+      oldChildrenEnd--;
+      newChildrenEnd--;
     }
   };
 
@@ -303,7 +361,7 @@ export function createRenderer(rendererOptions) {
       hostSetElementText(el, children);
     } else if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
       // 数组子节点 如果传的是数组 则遍历数组
-      mountChildren(children, el);
+      mountChildren(children, el, anchor);
     }
     hostInsert(el, container);
   };
