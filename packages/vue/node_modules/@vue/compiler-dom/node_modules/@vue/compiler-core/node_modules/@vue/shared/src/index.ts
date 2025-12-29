@@ -11,6 +11,7 @@ export function isObject(val: any) {
 export function isString(val: any) {
   return typeof val == "string";
 }
+export const extend = Object.assign;
 
 export const EMPTY_OBJ: { readonly [key: string]: any } = Object.freeze({});
 

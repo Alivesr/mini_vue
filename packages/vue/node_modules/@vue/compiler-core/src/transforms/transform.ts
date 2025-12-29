@@ -1,4 +1,5 @@
 import { NodeTypes } from "../ast";
+import { isSingleElementRoot } from "../hoiststatic";
 
 /**
  * transform 上下文对象
@@ -118,4 +119,29 @@ export function transform(root, options) {
   const context = createTransformContext(root, options);
   // 按照深度优先依次处理 node 节点转化
   traverseNode(root, context);
+  createRootCodegen(root);
+  root.helpers = [...context.helpers.keys()];
+  root.components = [];
+  root.directives = [];
+  root.imports = [];
+  root.hoists = [];
+  root.temps = [];
+  root.cached = [];
+}
+
+/**
+ * 生成 root 节点下的 codegen
+ */
+function createRootCodegen(root) {
+  const { children } = root;
+
+  // 仅支持一个根节点的处理
+  if (children.length === 1) {
+    // 获取单个根节点
+    const child = children[0];
+    if (isSingleElementRoot(root, child) && child.codegenNode) {
+      const codegenNode = child.codegenNode;
+      root.codegenNode = codegenNode;
+    }
+  }
 }

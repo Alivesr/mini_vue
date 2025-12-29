@@ -330,6 +330,7 @@ function isObject2(val) {
 function isString(val) {
   return typeof val == "string";
 }
+var extend = Object.assign;
 var EMPTY_OBJ = Object.freeze({});
 
 // packages/reactivity/src/computed.ts
@@ -1176,6 +1177,35 @@ var render = (...args) => {
   ensureRenderer().render(...args);
 };
 
+// packages/compiler-core/src/runtimeHelper.ts
+var CREATE_ELEMENT_VNODE = /* @__PURE__ */ Symbol("createElementVNode");
+var CREATE_VNODE = /* @__PURE__ */ Symbol("createVNode");
+var helperNameMap = {
+  // 在 renderer 中，通过 export { createVNode as createElementVNode }
+  [CREATE_ELEMENT_VNODE]: "createElementVNode",
+  [CREATE_VNODE]: "createVNode"
+};
+
+// packages/compiler-core/src/ast.ts
+function createVNodeCall(context, tag, props, children) {
+  if (context) {
+    context.helper(CREATE_ELEMENT_VNODE);
+  }
+  return {
+    type: 13 /* VNODE_CALL */,
+    tag,
+    props,
+    children
+  };
+}
+function createCompoundExpression(children, loc) {
+  return {
+    type: 8 /* COMPOUND_EXPRESSION */,
+    loc,
+    children
+  };
+}
+
 // packages/compiler-core/src/parse.ts
 function createRoot(children) {
   return {
@@ -1284,6 +1314,12 @@ function parseTextData(context, length) {
   return rawText;
 }
 
+// packages/compiler-core/src/hoiststatic.ts
+function isSingleElementRoot(root, child) {
+  const { children } = root;
+  return children.length === 1 && child.type === 1 /* ELEMENT */;
+}
+
 // packages/compiler-core/src/transforms/transform.ts
 function createTransformContext(root, { nodeTransforms = [] }) {
   const context = {
@@ -1336,24 +1372,85 @@ function traverseChildren(parent, context) {
 function transform(root, options) {
   const context = createTransformContext(root, options);
   traverseNode(root, context);
+  createRootCodegen(root);
+  root.helpers = [...context.helpers.keys()];
+  root.components = [];
+  root.directives = [];
+  root.imports = [];
+  root.hoists = [];
+  root.temps = [];
+  root.cached = [];
+}
+function createRootCodegen(root) {
+  const { children } = root;
+  if (children.length === 1) {
+    const child = children[0];
+    if (isSingleElementRoot(root, child) && child.codegenNode) {
+      const codegenNode = child.codegenNode;
+      root.codegenNode = codegenNode;
+    }
+  }
 }
 
 // packages/compiler-core/src/transforms/transformElement.ts
 var transformElement = (node, context) => {
   return function postTransformElement() {
+    node = context.currentNode;
+    if (node.type !== 1 /* ELEMENT */) {
+      return;
+    }
+    const { tag } = node;
+    let vnodeTag = `"${tag}"`;
+    let vnodeProps = [];
+    let vnodeChildren = node.children;
+    node.codegenNode = createVNodeCall(
+      context,
+      vnodeTag,
+      vnodeProps,
+      vnodeChildren
+    );
   };
 };
+
+// packages/compiler-core/src/utils.ts
+function isText(node) {
+  return node.type === 5 /* INTERPOLATION */ || node.type === 2 /* TEXT */;
+}
 
 // packages/compiler-core/src/transforms/transformText.ts
 var transformText = (node, context) => {
   if (node.type === 0 /* ROOT */ || node.type === 1 /* ELEMENT */ || node.type === 11 /* FOR */ || node.type === 10 /* IF_BRANCH */) {
     return () => {
+      const children = node.children;
+      let currentContainer;
+      for (let i = 0; i < children.length; i++) {
+        const child = children[i];
+        if (isText(child)) {
+          for (let j = i + 1; j < children.length; j++) {
+            const next = children[j];
+            if (isText(next)) {
+              if (!currentContainer) {
+                currentContainer = children[i] = createCompoundExpression(
+                  [child],
+                  child.loc
+                );
+              }
+              currentContainer.children.push(` + `, next);
+              children.splice(j, 1);
+              j--;
+            } else {
+              currentContainer = void 0;
+              break;
+            }
+          }
+        }
+      }
     };
   }
 };
 
 // packages/compiler-core/src/compile.ts
-function baseCompile(template, options) {
+function baseCompile(template, options = {}) {
   const ast = baseParse(template);
   transform(
     ast,
@@ -1362,7 +1459,10 @@ function baseCompile(template, options) {
     })
   );
   console.log(JSON.stringify(ast));
-  return {};
+  return function render2() {
+    console.warn("baseCompile: \u4EE3\u7801\u751F\u6210\u529F\u80FD\u5C1A\u672A\u5B9E\u73B0");
+    return null;
+  };
 }
 
 // packages/compiler-dom/src/index.ts
@@ -1383,6 +1483,7 @@ export {
   createRenderer,
   createVNode,
   effect,
+  extend,
   h,
   isArray,
   isFunction,
