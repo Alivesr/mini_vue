@@ -1010,6 +1010,10 @@ function createRenderer(rendererOptions2) {
     }
   };
   const render2 = (vnode, container) => {
+    if (!container) {
+      console.warn("render: container is null or undefined");
+      return;
+    }
     if (vnode == null) {
       if (container._vnode) {
         unmount(container._vnode);
@@ -1173,11 +1177,18 @@ var render = (...args) => {
 };
 
 // packages/compiler-core/src/parse.ts
+function createRoot(children) {
+  return {
+    type: 0 /* ROOT */,
+    children,
+    // loc：位置，这个属性并不影响渲染，但是它必须存在，否则会报错。所以我们给了他一个 {}
+    loc: {}
+  };
+}
 function baseParse(content) {
   const context = createParserContext(content);
   const children = parseChildren(context, []);
-  console.log(children);
-  return {};
+  return createRoot(children);
 }
 function createParserContext(content) {
   return {

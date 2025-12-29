@@ -6,14 +6,26 @@
     <title>Document</title>
   </head>
   <body>
+    <div id="app"></div>
     <script type="module">
-      import { compile } from "../../vue/dist/vue.esm-browser.js";
+      import { compile, h, render } from "../../vue/dist/vue.esm-browser.js";
+
       // 创建 template
-      const template = `<div> hello world </div>`;
+      const template = ``;
 
       // 生成 render 函数
       const renderFn = compile(template);
-      console.log(renderFn);
+
+      // 创建组件
+      const component = {
+        render: renderFn,
+      };
+
+      // 通过 h 函数，生成 vnode
+      const vnode = h(component);
+
+      // 通过 render 函数渲染组件
+      render(vnode, document.querySelector("#app"));
     </script>
   </body>
 </html>

@@ -499,6 +499,11 @@ export function createRenderer(rendererOptions) {
   const render = (vnode, container) => {
     //将虚拟节点渲染成真实节点
     //_vnode第一次为null，之后为上一次的虚拟节点
+    if (!container) {
+      console.warn("render: container is null or undefined");
+      return;
+    }
+
     if (vnode == null) {
       if (container._vnode) {
         unmount(container._vnode);
