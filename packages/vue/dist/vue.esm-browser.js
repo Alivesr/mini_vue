@@ -1284,9 +1284,83 @@ function parseTextData(context, length) {
   return rawText;
 }
 
+// packages/compiler-core/src/transforms/transform.ts
+function createTransformContext(root, { nodeTransforms = [] }) {
+  const context = {
+    // options
+    nodeTransforms,
+    // state
+    root,
+    helpers: /* @__PURE__ */ new Map(),
+    currentNode: root,
+    parent: null,
+    childIndex: 0,
+    // methods
+    helper(name) {
+      const count = context.helpers.get(name) || 0;
+      context.helpers.set(name, count + 1);
+      return name;
+    }
+  };
+  return context;
+}
+function traverseNode(node, context) {
+  context.currentNode = node;
+  const { nodeTransforms } = context;
+  const exitFns = [];
+  for (let i2 = 0; i2 < nodeTransforms.length; i2++) {
+    const onExit = nodeTransforms[i2](node, context);
+    if (onExit) {
+      exitFns.push(onExit);
+    }
+  }
+  switch (node.type) {
+    case 1 /* ELEMENT */:
+    case 0 /* ROOT */:
+      traverseChildren(node, context);
+      break;
+  }
+  context.currentNode = node;
+  let i = exitFns.length;
+  while (i--) {
+    exitFns[i]();
+  }
+}
+function traverseChildren(parent, context) {
+  parent.children.forEach((node, index) => {
+    context.parent = parent;
+    context.childIndex = index;
+    traverseNode(node, context);
+  });
+}
+function transform(root, options) {
+  const context = createTransformContext(root, options);
+  traverseNode(root, context);
+}
+
+// packages/compiler-core/src/transforms/transformElement.ts
+var transformElement = (node, context) => {
+  return function postTransformElement() {
+  };
+};
+
+// packages/compiler-core/src/transforms/transformText.ts
+var transformText = (node, context) => {
+  if (node.type === 0 /* ROOT */ || node.type === 1 /* ELEMENT */ || node.type === 11 /* FOR */ || node.type === 10 /* IF_BRANCH */) {
+    return () => {
+    };
+  }
+};
+
 // packages/compiler-core/src/compile.ts
 function baseCompile(template, options) {
   const ast = baseParse(template);
+  transform(
+    ast,
+    extend(options, {
+      nodeTransforms: [transformElement, transformText]
+    })
+  );
   console.log(JSON.stringify(ast));
   return {};
 }
